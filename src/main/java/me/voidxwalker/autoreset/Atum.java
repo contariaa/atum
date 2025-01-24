@@ -75,7 +75,7 @@ public class Atum implements ClientModInitializer {
      * Returns true if the seed is set by Atum and no external seed provider is used.
      */
     public static boolean isSetSeed() {
-        return Atum.seedProvider != DEFAULT_SEED_PROVIDER && (config.isSetSeed() || config.demoMode);
+        return Atum.seedProvider == DEFAULT_SEED_PROVIDER && (config.isSetSeed() || config.demoMode);
     }
 
     public static SeedProvider getSeedProvider() {
