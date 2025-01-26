@@ -22,7 +22,9 @@ public abstract class OptionsScreenMixin extends Screen {
     @Inject(method = "init", at = @At("TAIL"))
     private void addStopResetsButton(CallbackInfo ci) {
         if (Atum.isRunning()) {
-            this.addButton(new ButtonWidget(0, this.height - 20, 100, 20, new TranslatableText("atum.menu.stop_resets"), button -> {
+            Text stopResetsText = new TranslatableText("atum.menu.stop_resets");
+            int width = this.textRenderer.getWidth(stopResetsText) + 20;
+            this.addButton(new ButtonWidget(0, this.height - 20, width, 20, stopResetsText, button -> {
                 button.active = false;
                 Atum.stopRunning();
                 if (this.client != null && this.client.world != null) {
