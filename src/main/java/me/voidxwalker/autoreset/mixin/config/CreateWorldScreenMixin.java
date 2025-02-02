@@ -2,6 +2,7 @@ package me.voidxwalker.autoreset.mixin.config;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
+import me.contaria.speedrunapi.util.TextUtil;
 import me.voidxwalker.autoreset.AttemptTracker;
 import me.voidxwalker.autoreset.Atum;
 import me.voidxwalker.autoreset.AtumCreateWorldScreen;
@@ -21,7 +22,6 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.resource.DataPackSettings;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.text.Text;
-import net.minecraft.text.TranslatableText;
 import net.minecraft.util.registry.RegistryTracker;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.GameRules;
@@ -344,11 +344,11 @@ public abstract class CreateWorldScreenMixin extends Screen {
         this.levelNameField.active = false;
 
         this.dataPacksButton.active = this.dataPackTempDir != null;
-        this.createLevelButton.setMessage(new TranslatableText("gui.done"));
+        this.createLevelButton.setMessage(TextUtil.translatable("gui.done"));
         this.demoModeButton = this.addButton(new ButtonWidget(
                 this.width / 2 + 5, 151, 150, 20,
-                new TranslatableText("atum.config.demoMode", ScreenTexts.getToggleText(Atum.config.demoMode)),
-                button -> button.setMessage(new TranslatableText("atum.config.demoMode", ScreenTexts.getToggleText(Atum.config.demoMode = !Atum.config.demoMode)))
+                TextUtil.translatable("atum.config.demoMode", ScreenTexts.getToggleText(Atum.config.demoMode)),
+                button -> button.setMessage(TextUtil.translatable("atum.config.demoMode", ScreenTexts.getToggleText(Atum.config.demoMode = !Atum.config.demoMode)))
         ));
         this.demoModeButton.visible = this.moreOptionsOpen;
     }
@@ -377,7 +377,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
             }
             Atum.config.save();
             MinecraftClient.getInstance().openScreen(this.parent);
-        }, new TranslatableText("atum.menu.legal_settings.warning"), Atum.config.getIllegalSettingsWarning(), new TranslatableText("atum.menu.legal_settings.confirm"), new TranslatableText("atum.menu.legal_settings.reset")));
+        }, TextUtil.translatable("atum.menu.legal_settings.warning"), Atum.config.getIllegalSettingsWarning(), TextUtil.translatable("atum.menu.legal_settings.confirm"), TextUtil.translatable("atum.menu.legal_settings.reset")));
     }
 
     @Unique

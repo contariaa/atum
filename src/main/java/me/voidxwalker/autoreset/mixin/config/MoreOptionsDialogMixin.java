@@ -4,6 +4,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.serialization.JsonOps;
+import me.contaria.speedrunapi.util.IdentifierUtil;
 import me.voidxwalker.autoreset.Atum;
 import me.voidxwalker.autoreset.AtumConfig;
 import me.voidxwalker.autoreset.interfaces.IMoreOptionsDialog;
@@ -76,12 +77,12 @@ public abstract class MoreOptionsDialogMixin implements IMoreOptionsDialog {
             case SINGLE_BIOME_SURFACE:
             case SINGLE_BIOME_CAVES:
             case SINGLE_BIOME_FLOATING_ISLANDS:
-                Identifier biomeID = new Identifier(Atum.config.generatorDetails);
-                Optional<Biome> biome = Registry.BIOME.getOrEmpty(new Identifier(Atum.config.generatorDetails));
+                Identifier id = IdentifierUtil.parse(Atum.config.generatorDetails);
+                Optional<Biome> biome = Registry.BIOME.getOrEmpty(id);
                 if (biome.isPresent()) {
                     this.generatorOptions = GeneratorTypeAccessor.atum$createFixedBiomeOptions(this.generatorOptions, Atum.config.generatorType.get(), biome.get());
                 } else {
-                    Atum.LOGGER.warn("Failed to parse biome: {}", biomeID);
+                    Atum.LOGGER.warn("Failed to parse biome: {}", id);
                 }
         }
     }
