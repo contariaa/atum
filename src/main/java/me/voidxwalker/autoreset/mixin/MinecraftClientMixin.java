@@ -94,7 +94,7 @@ public abstract class MinecraftClientMixin {
 
     @Inject(method = "startIntegratedServer(Ljava/lang/String;Lnet/minecraft/util/registry/RegistryTracker$Modifiable;Ljava/util/function/Function;Lcom/mojang/datafixers/util/Function4;ZLnet/minecraft/client/MinecraftClient$WorldLoadAction;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/integrated/IntegratedServer;isLoading()Z", shift = At.Shift.AFTER))
     private void resetPreview(CallbackInfo ci) {
-        if (Atum.isResetScheduled() && FabricLoader.getInstance().isModLoaded("worldpreview")) {
+        if (Atum.HAS_WORLDPREVIEW && Atum.isResetScheduled()) {
             this.clickButton(this.currentScreen, "menu.returnToMenu");
         }
     }

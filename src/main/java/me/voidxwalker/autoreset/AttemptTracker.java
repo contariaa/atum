@@ -1,6 +1,6 @@
 package me.voidxwalker.autoreset;
 
-import org.mcsr.speedrunapi.config.SpeedrunConfigAPI;
+import me.contaria.speedrunapi.config.SpeedrunConfigAPI;
 
 import java.io.File;
 import java.io.IOException;

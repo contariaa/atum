@@ -4,6 +4,7 @@ import me.voidxwalker.autoreset.api.seedprovider.AtumWaitingScreen;
 import me.voidxwalker.autoreset.api.seedprovider.SeedProvider;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.options.KeyBinding;
 import org.apache.logging.log4j.LogManager;
@@ -15,8 +16,12 @@ import java.util.Optional;
 
 public class Atum implements ClientModInitializer {
     public static final Logger LOGGER = LogManager.getLogger();
+
+    public static final boolean HAS_WORLDPREVIEW = FabricLoader.getInstance().isModLoaded("worldpreview");
+
     public static AtumConfig config;
     public static KeyBinding resetKey;
+
     private static boolean running = false;
     private static boolean shouldReset;
 
@@ -72,7 +77,7 @@ public class Atum implements ClientModInitializer {
     }
 
     /**
-     * Returns true if the seed is set by Atum and no external seed provider is used.
+     * Returns true if the seed is set by Atum and no external seed provider is used, used by chunkcacher.
      */
     public static boolean isSetSeed() {
         return Atum.seedProvider == DEFAULT_SEED_PROVIDER && (config.isSetSeed() || config.demoMode);

@@ -4,6 +4,12 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
+import me.contaria.speedrunapi.config.SpeedrunConfigAPI;
+import me.contaria.speedrunapi.config.SpeedrunConfigContainer;
+import me.contaria.speedrunapi.config.api.SpeedrunConfig;
+import me.contaria.speedrunapi.config.api.SpeedrunOption;
+import me.contaria.speedrunapi.config.api.annotations.Config;
+import me.contaria.speedrunapi.util.TextUtil;
 import me.voidxwalker.autoreset.interfaces.ISeedStringHolder;
 import me.voidxwalker.autoreset.mixin.access.CreateWorldScreen$ModeAccessor;
 import me.voidxwalker.autoreset.mixin.access.GeneratorTypeAccessor;
@@ -14,20 +20,15 @@ import net.minecraft.client.gui.screen.ScreenTexts;
 import net.minecraft.client.gui.screen.world.CreateWorldScreen;
 import net.minecraft.client.world.GeneratorType;
 import net.minecraft.resource.DataPackSettings;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
-import net.minecraft.text.TranslatableText;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.GameRules;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.mcsr.speedrunapi.config.SpeedrunConfigAPI;
-import org.mcsr.speedrunapi.config.SpeedrunConfigContainer;
-import org.mcsr.speedrunapi.config.api.SpeedrunConfig;
-import org.mcsr.speedrunapi.config.api.SpeedrunOption;
-import org.mcsr.speedrunapi.config.api.annotations.Config;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -47,7 +48,7 @@ public class AtumConfig implements SpeedrunConfig {
     public boolean structures = true;
     // renamed from difficulty to worldDifficulty in 2.1
     // 2.0 set the default to NORMAL, causing people to play on normal instead of easy because they weren't used to it
-    public Difficulty worldDifficulty = Difficulty.EASY;
+    public Difficulty difficulty = Difficulty.EASY;
     @Config.Strings.MaxChars(32)
     public String seed = "";
     public boolean bonusChest = false;
@@ -260,7 +261,7 @@ public class AtumConfig implements SpeedrunConfig {
     public Text getIllegalSettingsWarning() {
         List<Text> warnings = this.getIllegalSettingsTexts();
         if (warnings.isEmpty()) {
-            return new TranslatableText("gui.none");
+            return TextUtil.translatable("gui.none");
         }
         MutableText warning = warnings.remove(0).shallowCopy();
         for (Text w : warnings) {
@@ -272,22 +273,22 @@ public class AtumConfig implements SpeedrunConfig {
     private List<Text> getIllegalSettingsTexts() {
         List<Text> texts = new ArrayList<>();
         if (this.gameMode != CreateWorldScreen.Mode.SURVIVAL && this.gameMode != CreateWorldScreen.Mode.HARDCORE) {
-            texts.add(new TranslatableText("selectWorld.gameMode").append(": ").append(new TranslatableText("selectWorld.gameMode." + ((CreateWorldScreen$ModeAccessor) (Object) this.gameMode).getTranslationSuffix())));
+            texts.add(TextUtil.translatable("selectWorld.gameMode").append(": ").append(TextUtil.translatable("selectWorld.gameMode." + ((CreateWorldScreen$ModeAccessor) (Object) this.gameMode).getTranslationSuffix())));
         }
         if (this.cheatsEnabled) {
-            texts.add(new TranslatableText("selectWorld.allowCommands").append(" ").append(ScreenTexts.ON));
+            texts.add(TextUtil.translatable("selectWorld.allowCommands").append(" ").append(ScreenTexts.ON));
         }
         if (!this.structures) {
-            texts.add(new TranslatableText("selectWorld.mapFeatures").append(" ").append(ScreenTexts.OFF));
+            texts.add(TextUtil.translatable("selectWorld.mapFeatures").append(" ").append(ScreenTexts.OFF));
         }
         if (this.bonusChest) {
-            texts.add(new TranslatableText("selectWorld.bonusItems").append(" ").append(ScreenTexts.ON));
+            texts.add(TextUtil.translatable("selectWorld.bonusItems").append(" ").append(ScreenTexts.ON));
         }
         if (this.generatorType != AtumGeneratorType.DEFAULT) {
-            texts.add(new TranslatableText("selectWorld.mapType").append(" ").append(this.generatorType.get().getTranslationKey()));
+            texts.add(TextUtil.translatable("selectWorld.mapType").append(" ").append(this.generatorType.get().getTranslationKey()));
         }
         if (this.modifiedGameRules) {
-            texts.add(new TranslatableText("selectWorld.gameRules").append(": Modified"));
+            texts.add(TextUtil.translatable("selectWorld.gameRules").append(": Modified"));
         }
         if (!this.isDefaultDataPackSettings(this.dataPackSettings)) {
             String dataPackInformation;
@@ -296,10 +297,10 @@ public class AtumConfig implements SpeedrunConfig {
             } else {
                 dataPackInformation = this.filterOnlyFileDataPacks(this.dataPackSettings.getEnabled()).size() + " | " + this.filterOnlyFileDataPacks(this.dataPackSettings.getDisabled()).size();
             }
-            texts.add(new TranslatableText("selectWorld.dataPacks").append(": " + dataPackInformation));
+            texts.add(TextUtil.translatable("selectWorld.dataPacks").append(": " + dataPackInformation));
         }
         if (this.demoMode) {
-            texts.add(new TranslatableText("atum.config.demoMode", ScreenTexts.ON));
+            texts.add(TextUtil.translatable("atum.config.demoMode", ScreenTexts.ON));
         }
         return texts;
     }
@@ -335,10 +336,10 @@ public class AtumConfig implements SpeedrunConfig {
             return debugText;
         }
 
-        MinecraftClient client = MinecraftClient.getInstance();
-        if (client.isIntegratedServerRunning()) {
+        MinecraftServer server = MinecraftClient.getInstance().getServer();
+        if (server != null) {
             String seedLine;
-            String creationSeed = ((ISeedStringHolder) client.getServer().getSaveProperties().getGeneratorOptions()).atum$getSeedString();
+            String creationSeed = ((ISeedStringHolder) server.getSaveProperties().getGeneratorOptions()).atum$getSeedString();
             if (!creationSeed.isEmpty()) {
                 if (Atum.getSeedProvider().shouldShowSeed()) {
                     seedLine = "Resetting the seed \"" + creationSeed + "\"";
@@ -352,7 +353,7 @@ public class AtumConfig implements SpeedrunConfig {
             if (Atum.config.gameMode == CreateWorldScreen.Mode.HARDCORE) {
                 seedLine += "hc";
             } else {
-                seedLine += Atum.config.worldDifficulty.getName().charAt(0);
+                seedLine += Atum.config.difficulty.getName().charAt(0);
             }
             debugText.add(seedLine);
         }
@@ -370,8 +371,26 @@ public class AtumConfig implements SpeedrunConfig {
     }
 
     @Override
+    public void onLoad(JsonObject jsonObject, int dataVersion) {
+        if (dataVersion < 1) {
+            // when Atum 2.0 released, default difficulty was set to NORMAL
+            // in Atum 2.1, it was set to EASY and the name was changed to
+            // "worldDifficulty" to reset the value in everyone's config
+            jsonObject.remove("difficulty");
+            if (jsonObject.has("worldDifficulty")) {
+                jsonObject.add("difficulty", jsonObject.get("worldDifficulty"));
+            }
+        }
+    }
+
+    @Override
     public void finishLoading() {
         this.updateHasLegalSettings();
+    }
+
+    @Override
+    public int getDataVersion() {
+        return 1;
     }
 
     @Override
