@@ -18,7 +18,6 @@ public abstract class GeneratorOptionsMixin implements ISeedStringHolder {
     @ModifyReturnValue(
             method = {
                     "withHardcore",
-                    "withDimensions",
                     "withBonusChest",
                     "toggleBonusChest",
                     "toggleGenerateStructures"

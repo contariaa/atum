@@ -4,7 +4,7 @@ import me.voidxwalker.autoreset.Atum;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.Mouse;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.options.ControlsOptionsScreen;
+import net.minecraft.client.gui.screen.option.ControlsOptionsScreen;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;

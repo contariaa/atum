@@ -21,7 +21,7 @@ public abstract class AtumWaitingScreen extends Screen {
     @SuppressWarnings("unused")
     protected final void continueWorldCreation() {
         this.onDecided();
-        MinecraftClient.getInstance().openScreen(new AtumCreateWorldScreen(null));
+        MinecraftClient.getInstance().openScreen(AtumCreateWorldScreen.create(null));
     }
 
     private void onDecided() {

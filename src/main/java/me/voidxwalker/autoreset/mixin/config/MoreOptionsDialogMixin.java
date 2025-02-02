@@ -2,7 +2,6 @@ package me.voidxwalker.autoreset.mixin.config;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.mojang.serialization.JsonOps;
 import me.contaria.speedrunapi.util.IdentifierUtil;
 import me.voidxwalker.autoreset.Atum;
@@ -14,9 +13,11 @@ import net.minecraft.client.gui.screen.world.MoreOptionsDialog;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.world.GeneratorType;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.JsonHelper;
+import net.minecraft.util.registry.BuiltinRegistries;
+import net.minecraft.util.registry.DynamicRegistryManager;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.util.registry.RegistryKey;
-import net.minecraft.util.registry.RegistryTracker;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.gen.GeneratorOptions;
 import net.minecraft.world.gen.chunk.FlatChunkGenerator;
@@ -25,6 +26,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 
 import java.util.Optional;
+import java.util.OptionalLong;
 
 @Mixin(MoreOptionsDialog.class)
 public abstract class MoreOptionsDialogMixin implements IMoreOptionsDialog {
@@ -34,9 +36,10 @@ public abstract class MoreOptionsDialogMixin implements IMoreOptionsDialog {
     @Shadow
     private GeneratorOptions generatorOptions;
     @Shadow
-    private RegistryTracker.Modifiable registryManager;
+    private DynamicRegistryManager.Impl registryManager;
+    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
     @Shadow
-    private String seedText;
+    private OptionalLong seed;
     @Shadow
     private TextFieldWidget seedTextField;
 
@@ -63,13 +66,19 @@ public abstract class MoreOptionsDialogMixin implements IMoreOptionsDialog {
         switch (Atum.config.generatorType) {
             case FLAT:
                 FlatChunkGeneratorConfig.CODEC.parse(
+                        // TODO: This always fails with "Not a registry ops"
+                        //       RegistryOps.of(JsonOps.INSTANCE, ?, this.registryManager)
                         JsonOps.INSTANCE,
-                        new JsonParser().parse(Atum.config.generatorDetails)
+                        JsonHelper.deserialize(Atum.config.generatorDetails)
                 ).resultOrPartial(
-                        error -> Atum.LOGGER.warn("Failed to deserialize flat world generator details!")
-                ).ifPresent(generatorConfig -> this.generatorOptions = this.generatorOptions.withDimensions(
-                        GeneratorOptions.getRegistryWithReplacedOverworldGenerator(
-                                this.generatorOptions.getDimensionMap(),
+                        error -> Atum.LOGGER.warn("Failed to deserialize flat world generator details! {}", error)
+                ).ifPresent(generatorConfig -> this.generatorOptions = new GeneratorOptions(
+                        this.generatorOptions.getSeed(),
+                        this.generatorOptions.shouldGenerateStructures(),
+                        this.generatorOptions.hasBonusChest(),
+                        GeneratorOptions.method_28608(
+                                this.registryManager.get(Registry.DIMENSION_TYPE_KEY),
+                                this.generatorOptions.getDimensions(),
                                 new FlatChunkGenerator(generatorConfig)
                         )
                 ));
@@ -78,9 +87,9 @@ public abstract class MoreOptionsDialogMixin implements IMoreOptionsDialog {
             case SINGLE_BIOME_CAVES:
             case SINGLE_BIOME_FLOATING_ISLANDS:
                 Identifier id = IdentifierUtil.parse(Atum.config.generatorDetails);
-                Optional<Biome> biome = Registry.BIOME.getOrEmpty(id);
+                Optional<Biome> biome = BuiltinRegistries.BIOME.getOrEmpty(id);
                 if (biome.isPresent()) {
-                    this.generatorOptions = GeneratorTypeAccessor.atum$createFixedBiomeOptions(this.generatorOptions, Atum.config.generatorType.get(), biome.get());
+                    this.generatorOptions = GeneratorTypeAccessor.atum$createFixedBiomeOptions(this.registryManager, this.generatorOptions, Atum.config.generatorType.get(), biome.get());
                 } else {
                     Atum.LOGGER.warn("Failed to parse biome: {}", id);
                 }
@@ -89,8 +98,7 @@ public abstract class MoreOptionsDialogMixin implements IMoreOptionsDialog {
 
     @Override
     public void atum$setSeed(String seedString) {
-        this.seedText = seedString;
-        this.seedTextField.setText(this.seedText);
+        this.seedTextField.setText(seedString);
         if (Atum.isRunning()) {
             ((ISeedStringHolder) this.generatorOptions).atum$setSeedString(seedString);
         }
@@ -98,7 +106,7 @@ public abstract class MoreOptionsDialogMixin implements IMoreOptionsDialog {
 
     @Override
     public void atum$saveAtumConfigurations() {
-        Atum.config.seed = this.seedText;
+        Atum.config.seed = this.seedTextField.getText();
         Atum.config.generatorType = this.generatorType.map(AtumConfig.AtumGeneratorType::from).orElse(AtumConfig.AtumGeneratorType.DEFAULT);
         Atum.config.structures = this.generatorOptions.shouldGenerateStructures();
         Atum.config.bonusChest = this.generatorOptions.hasBonusChest();
@@ -107,17 +115,17 @@ public abstract class MoreOptionsDialogMixin implements IMoreOptionsDialog {
         switch (Atum.config.generatorType) {
             case FLAT:
                 generatorDetails = FlatChunkGeneratorConfig.CODEC.encode(
-                        ((FlatChunkGenerator) this.generatorOptions.getChunkGenerator()).getGeneratorConfig(),
+                        ((FlatChunkGenerator) this.generatorOptions.getChunkGenerator()).getConfig(),
                         JsonOps.INSTANCE,
                         new JsonObject()
                 ).resultOrPartial(
-                        error -> Atum.LOGGER.warn("Failed to serialize flat world generator details!")
+                        error -> Atum.LOGGER.warn("Failed to serialize flat world generator details! {}", error)
                 ).map(JsonElement::toString).orElse("");
                 break;
             case SINGLE_BIOME_SURFACE:
             case SINGLE_BIOME_CAVES:
             case SINGLE_BIOME_FLOATING_ISLANDS:
-                generatorDetails = Registry.BIOME.getKey(this.generatorOptions.getChunkGenerator().getBiomeSource().getBiomes().get(0))
+                generatorDetails = BuiltinRegistries.BIOME.getKey(this.generatorOptions.getChunkGenerator().getBiomeSource().getBiomes().get(0))
                         .map(RegistryKey::getValue)
                         .map(Identifier::toString)
                         .orElse("");
@@ -127,6 +135,6 @@ public abstract class MoreOptionsDialogMixin implements IMoreOptionsDialog {
 
     @Override
     public boolean atum$isSetSeed() {
-        return !this.seedText.isEmpty();
+        return this.seed.isPresent();
     }
 }

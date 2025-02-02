@@ -15,14 +15,14 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ScreenTexts;
 import net.minecraft.client.gui.screen.world.CreateWorldScreen;
 import net.minecraft.client.gui.screen.world.MoreOptionsDialog;
-import net.minecraft.client.gui.widget.AbstractButtonWidget;
 import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.client.gui.widget.ClickableWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.resource.DataPackSettings;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.text.Text;
-import net.minecraft.util.registry.RegistryTracker;
+import net.minecraft.util.registry.DynamicRegistryManager;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.GameRules;
 import net.minecraft.world.gen.GeneratorOptions;
@@ -52,9 +52,9 @@ public abstract class CreateWorldScreenMixin extends Screen {
     private Screen parent;
 
     @Shadow
-    private Difficulty safeDifficulty;
+    private Difficulty field_24290;
     @Shadow
-    private Difficulty difficulty;
+    private Difficulty field_24289;
     @Shadow
     private CreateWorldScreen.Mode currentMode;
     @Shadow
@@ -81,7 +81,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
     private ButtonWidget dataPacksButton;
 
     @Unique
-    private AbstractButtonWidget demoModeButton;
+    private ClickableWidget demoModeButton;
 
     @Shadow
     protected abstract void updateSaveFolderName();
@@ -94,7 +94,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
     }
 
     @Inject(
-            method = "<init>(Lnet/minecraft/client/gui/screen/Screen;Lnet/minecraft/client/gui/screen/world/MoreOptionsDialog;)V",
+            method = "<init>(Lnet/minecraft/client/gui/screen/Screen;Lnet/minecraft/world/level/LevelInfo;Lnet/minecraft/world/gen/GeneratorOptions;Ljava/nio/file/Path;Lnet/minecraft/resource/DataPackSettings;Lnet/minecraft/util/registry/DynamicRegistryManager$Impl;)V",
             at = @At("TAIL")
     )
     private void loadAtumConfigurations(CallbackInfo ci) {
@@ -110,7 +110,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
             method = "init",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/client/gui/screen/world/CreateWorldScreen;addButton(Lnet/minecraft/client/gui/widget/AbstractButtonWidget;)Lnet/minecraft/client/gui/widget/AbstractButtonWidget;",
+                    target = "Lnet/minecraft/client/gui/screen/world/CreateWorldScreen;addButton(Lnet/minecraft/client/gui/widget/ClickableWidget;)Lnet/minecraft/client/gui/widget/ClickableWidget;",
                     ordinal = 0
             ),
             slice = @Slice(
@@ -120,7 +120,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
                     )
             )
     )
-    private boolean removeCancelButton(CreateWorldScreen screen, AbstractButtonWidget button) {
+    private boolean removeCancelButton(CreateWorldScreen screen, ClickableWidget button) {
         return !this.isAtum();
     }
 
@@ -194,22 +194,22 @@ public abstract class CreateWorldScreenMixin extends Screen {
             method = "render",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/client/gui/screen/world/CreateWorldScreen;drawStringWithShadow(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/font/TextRenderer;Ljava/lang/String;III)V",
+                    target = "Lnet/minecraft/client/gui/screen/world/CreateWorldScreen;drawTextWithShadow(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/font/TextRenderer;Lnet/minecraft/text/Text;III)V",
                     ordinal = 0
             ),
             slice = @Slice(
                     from = @At(
-                            value = "CONSTANT",
-                            args = "stringValue=selectWorld.resultFolder"
+                            value = "FIELD",
+                            target = "Lnet/minecraft/client/gui/screen/world/CreateWorldScreen;RESULT_FOLDER_TEXT:Lnet/minecraft/text/Text;"
                     )
             )
     )
-    private boolean doNotShowResultFolderOnConfigScreen(CreateWorldScreen screen, MatrixStack matrices, TextRenderer textRenderer, String string, int x, int y, int color) {
+    private boolean doNotShowResultFolderOnConfigScreen(MatrixStack matrices, TextRenderer textRenderer, Text text, int x, int y, int color) {
         return !this.isAtum();
     }
 
     @ModifyExpressionValue(
-            method = "copyDataPack(Ljava/nio/file/Path;Lnet/minecraft/client/MinecraftClient;)Ljava/nio/file/Path;",
+            method = "method_29685",
             at = @At(
                     value = "INVOKE",
                     target = "Ljava/util/stream/Stream;filter(Ljava/util/function/Predicate;)Ljava/util/stream/Stream;"
@@ -253,7 +253,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
     @Unique
     private void load() {
         this.currentMode = Atum.config.gameMode;
-        this.safeDifficulty = this.difficulty = Atum.config.difficulty;
+        this.field_24290 = this.field_24289 = Atum.config.difficulty;
         this.cheatsEnabled = Atum.config.cheatsEnabled;
         this.tweakedCheats = true;
         if (Atum.config.hasModifiedGameRules()) {
@@ -281,7 +281,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
             return;
         }
 
-        this.dataPackTempDir = CreateWorldScreen.copyDataPack(Atum.config.dataPackDirectory, this.client);
+        this.dataPackTempDir = CreateWorldScreen.method_29685(Atum.config.dataPackDirectory, this.client);
         if (this.dataPackTempDir == null) {
             Atum.config.dataPackMismatch = true;
             Atum.LOGGER.warn("Data pack mismatch, failed to copy data packs!");
@@ -312,7 +312,8 @@ public abstract class CreateWorldScreenMixin extends Screen {
         if (Atum.inDemoMode()) {
             String demoWorldName = Atum.config.attemptTracker.incrementAndGetWorldName(AttemptTracker.Type.DEMO);
             Atum.LOGGER.info("Creating \"{}\" with demo seed...", demoWorldName);
-            MinecraftClient.getInstance().createWorld(demoWorldName, MinecraftServer.DEMO_LEVEL_INFO, RegistryTracker.create(), GeneratorOptions.DEMO_CONFIG);
+            DynamicRegistryManager.Impl registryManager = DynamicRegistryManager.create();
+            MinecraftClient.getInstance().createWorld(demoWorldName, MinecraftServer.DEMO_LEVEL_INFO, registryManager, GeneratorOptions.method_31112(registryManager));
             return;
         }
 
@@ -338,7 +339,6 @@ public abstract class CreateWorldScreenMixin extends Screen {
         this.levelNameField.setText(Atum.config.attemptTracker.getWorldName(
                 ((IMoreOptionsDialog) this.moreOptionsDialog).atum$isSetSeed() ? AttemptTracker.Type.SSG : AttemptTracker.Type.RSG
         ));
-        this.levelNameField.setSelected(false);
         this.levelNameField.setEditable(false);
         this.levelNameField.setFocusUnlocked(false);
         this.levelNameField.active = false;
@@ -356,7 +356,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
     @Unique
     private void save() {
         Atum.config.gameMode = this.currentMode;
-        Atum.config.difficulty = this.difficulty;
+        Atum.config.difficulty = this.field_24289;
         Atum.config.cheatsEnabled = this.cheatsEnabled;
         Atum.config.setGameRules(this.gameRules.copy());
         Atum.config.setDataPackSettings(this.dataPackSettings);

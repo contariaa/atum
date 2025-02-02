@@ -1,6 +1,7 @@
 package me.voidxwalker.autoreset.mixin.access;
 
 import net.minecraft.client.world.GeneratorType;
+import net.minecraft.util.registry.DynamicRegistryManager;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.gen.GeneratorOptions;
 import org.spongepowered.asm.mixin.Mixin;
@@ -50,7 +51,7 @@ public interface GeneratorTypeAccessor {
     }
 
     @Invoker("createFixedBiomeOptions")
-    static GeneratorOptions atum$createFixedBiomeOptions(GeneratorOptions generatorOptions, GeneratorType generatorType, Biome biome) {
+    static GeneratorOptions atum$createFixedBiomeOptions(DynamicRegistryManager registryManager, GeneratorOptions generatorOptions, GeneratorType generatorType, Biome biome) {
         throw new UnsupportedOperationException();
     }
 }

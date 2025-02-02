@@ -9,11 +9,12 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.screen.*;
 import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.options.GameOptions;
+import net.minecraft.client.option.GameOptions;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.profiler.ProfileResult;
+import net.minecraft.world.gen.GeneratorOptions;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -77,7 +78,7 @@ public abstract class MinecraftClientMixin {
     }
 
     @Inject(
-            method = "startIntegratedServer(Ljava/lang/String;Lnet/minecraft/util/registry/RegistryTracker$Modifiable;Ljava/util/function/Function;Lcom/mojang/datafixers/util/Function4;ZLnet/minecraft/client/MinecraftClient$WorldLoadAction;)V",
+            method = "startIntegratedServer(Ljava/lang/String;Lnet/minecraft/util/registry/DynamicRegistryManager$Impl;Ljava/util/function/Function;Lcom/mojang/datafixers/util/Function4;ZLnet/minecraft/client/MinecraftClient$WorldLoadAction;)V",
             at = @At(
                     value = "INVOKE",
                     target = "Lnet/minecraft/server/integrated/IntegratedServer;isLoading()Z",
@@ -91,7 +92,7 @@ public abstract class MinecraftClientMixin {
     }
 
     @ModifyVariable(
-            method = "startIntegratedServer(Ljava/lang/String;Lnet/minecraft/util/registry/RegistryTracker$Modifiable;Ljava/util/function/Function;Lcom/mojang/datafixers/util/Function4;ZLnet/minecraft/client/MinecraftClient$WorldLoadAction;)V",
+            method = "startIntegratedServer(Ljava/lang/String;Lnet/minecraft/util/registry/DynamicRegistryManager$Impl;Ljava/util/function/Function;Lcom/mojang/datafixers/util/Function4;ZLnet/minecraft/client/MinecraftClient$WorldLoadAction;)V",
             at = @At("STORE")
     )
     private LevelLoadingScreen addSeedToLLS(LevelLoadingScreen levelLoadingScreen, @Local MinecraftClient.IntegratedResourceManager integratedResourceManager) {
@@ -100,6 +101,22 @@ public abstract class MinecraftClientMixin {
             ((ISeedStringHolder) levelLoadingScreen).atum$setSeedString(seed);
         }
         return levelLoadingScreen;
+    }
+
+    @ModifyArg(
+            method = "method_31125",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/world/level/LevelProperties;<init>(Lnet/minecraft/world/level/LevelInfo;Lnet/minecraft/world/gen/GeneratorOptions;Lcom/mojang/serialization/Lifecycle;)V"
+            ),
+            index = 1
+    )
+    private static GeneratorOptions addSeedToGeneratorOptions(GeneratorOptions options, @Local(argsOnly = true) GeneratorOptions old) {
+        String seed = ((ISeedStringHolder) old).atum$getSeedString();
+        if (seed != null) {
+            ((ISeedStringHolder) options).atum$setSeedString(seed);
+        }
+        return options;
     }
 
     @ModifyReturnValue(

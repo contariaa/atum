@@ -40,7 +40,7 @@ public abstract class TitleScreenMixin extends Screen {
 
         this.addButton(new ButtonWidget(this.width / 2 - 124, this.height / 4 + 48, 20, 20, LiteralText.EMPTY, button -> {
             if (Screen.hasShiftDown()) {
-                MinecraftClient.getInstance().openScreen(new AtumCreateWorldScreen(this));
+                MinecraftClient.getInstance().openScreen(AtumCreateWorldScreen.create(this));
                 return;
             }
             Atum.scheduleReset();
@@ -52,7 +52,7 @@ public abstract class TitleScreenMixin extends Screen {
                 MinecraftClient.getInstance().getTextureManager().bindTexture(BUTTON_IMAGE);
                 DrawableHelper.drawTexture(matrices, this.x + 2, this.y + 2, 0.0F, 0.0F, 16, 16, 16, 16);
                 if (Screen.hasShiftDown() && this.isHovered()) {
-                    this.drawCenteredText(matrices, TitleScreenMixin.this.textRenderer, TextUtil.translatable("atum.menu.open_config"), this.x + this.width / 2, this.y - 15, 16777215);
+                    DrawableHelper.drawCenteredText(matrices, TitleScreenMixin.this.textRenderer, TextUtil.translatable("atum.menu.open_config"), this.x + this.width / 2, this.y - 15, 16777215);
                 }
             }
         });

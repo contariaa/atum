@@ -6,7 +6,7 @@ import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.options.KeyBinding;
+import net.minecraft.client.option.KeyBinding;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.glfw.GLFW;
@@ -32,7 +32,7 @@ public class Atum implements ClientModInitializer {
         running = true;
         shouldReset = false;
 
-        MinecraftClient.getInstance().openScreen(new AtumCreateWorldScreen(null));
+        MinecraftClient.getInstance().openScreen(AtumCreateWorldScreen.create(null));
     }
 
     public static boolean isRunning() {

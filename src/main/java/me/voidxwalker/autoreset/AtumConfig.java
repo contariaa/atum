@@ -99,9 +99,9 @@ public class AtumConfig implements SpeedrunConfig {
     private boolean areGameRulesModified(GameRules gameRules) {
         GameRules defaultGameRules = new GameRules();
         MutableBoolean modified = new MutableBoolean();
-        GameRules.forEachType(new GameRules.TypeConsumer() {
+        GameRules.accept(new GameRules.Visitor() {
             @Override
-            public <T extends GameRules.Rule<T>> void accept(GameRules.Key<T> key, GameRules.Type<T> type) {
+            public <T extends GameRules.Rule<T>> void visit(GameRules.Key<T> key, GameRules.Type<T> type) {
                 if (modified.isFalse() && gameRules.get(key).getCommandResult() != defaultGameRules.get(key).getCommandResult()) {
                     modified.setTrue();
                 }
@@ -113,9 +113,9 @@ public class AtumConfig implements SpeedrunConfig {
     private JsonElement serializeGameRules(GameRules gameRules) {
         GameRules defaultGameRules = new GameRules();
         JsonObject jsonObject = new JsonObject();
-        GameRules.forEachType(new GameRules.TypeConsumer() {
+        GameRules.accept(new GameRules.Visitor() {
             @Override
-            public <T extends GameRules.Rule<T>> void accept(GameRules.Key<T> key, GameRules.Type<T> type) {
+            public <T extends GameRules.Rule<T>> void visit(GameRules.Key<T> key, GameRules.Type<T> type) {
                 GameRules.Rule<T> rule = gameRules.get(key);
                 if (rule.getCommandResult() != defaultGameRules.get(key).getCommandResult()) {
                     jsonObject.add(key.getName(), new JsonPrimitive(rule.serialize()));
@@ -127,9 +127,9 @@ public class AtumConfig implements SpeedrunConfig {
 
     private GameRules deserializeGameRules(JsonElement jsonElement) {
         GameRules gameRules = new GameRules();
-        GameRules.forEachType(new GameRules.TypeConsumer() {
+        GameRules.accept(new GameRules.Visitor() {
             @Override
-            public <T extends GameRules.Rule<T>> void accept(GameRules.Key<T> key, GameRules.Type<T> type) {
+            public <T extends GameRules.Rule<T>> void visit(GameRules.Key<T> key, GameRules.Type<T> type) {
                 if (jsonElement.getAsJsonObject().has(key.getName())) {
                     ((RuleAccessor) gameRules.get(key)).atum$deserialize(jsonElement.getAsJsonObject().get(key.getName()).getAsString());
                 }
@@ -404,7 +404,7 @@ public class AtumConfig implements SpeedrunConfig {
         if (Atum.isRunning()) {
             throw new IllegalStateException("Cannot configure Atum while it's running.");
         }
-        return new AtumCreateWorldScreen(parent);
+        return AtumCreateWorldScreen.create(parent);
     }
 
     @Override

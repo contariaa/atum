@@ -3,7 +3,7 @@ package me.voidxwalker.autoreset.mixin.hotkey;
 import me.voidxwalker.autoreset.Atum;
 import net.minecraft.client.Keyboard;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.screen.options.ControlsOptionsScreen;
+import net.minecraft.client.gui.screen.option.ControlsOptionsScreen;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;

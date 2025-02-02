@@ -20,11 +20,11 @@ loom {
 
 dependencies {
     minecraft "com.mojang:minecraft:$minecraft_version"
-    mappings "dev.tildejustin:yarn:${minecraft_version}-build.$yarn_build:v2"
+    mappings "net.fabricmc:yarn:${minecraft_version}+build.$yarn_build:v2"
     modImplementation "net.fabricmc:fabric-loader:$loader_version"
 
     // check for the latest versions at https://jitpack.io/#kingcontaria/speedrunapi
-    modImplementation "com.github.KingContaria:SpeedrunAPI:8497ae7479"
+    modImplementation "com.github.KingContaria:SpeedrunAPI:74bdfafbe1"
 }
 
 processResources {
