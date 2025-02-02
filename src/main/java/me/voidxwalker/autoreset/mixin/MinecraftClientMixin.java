@@ -2,6 +2,7 @@ package me.voidxwalker.autoreset.mixin;
 
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import com.llamalad7.mixinextras.sugar.Local;
+import me.contaria.speedrunapi.util.TextUtil;
 import me.voidxwalker.autoreset.Atum;
 import me.voidxwalker.autoreset.interfaces.ISeedStringHolder;
 import net.minecraft.client.MinecraftClient;
@@ -66,7 +67,7 @@ public abstract class MinecraftClientMixin {
                 if (!this.clickButton(gameMenuScreen, "fast_reset.menu.quitWorld", "menu.quitWorld", "menu.returnToMenu", "menu.disconnect") || Atum.isInWorld()) {
                     if (this.world != null) {
                         this.world.disconnect();
-                        this.disconnect(new SaveLevelScreen(new TranslatableText("menu.savingLevel")));
+                        this.disconnect(new SaveLevelScreen(TextUtil.translatable("menu.savingLevel")));
                     }
                     this.openScreen(new TitleScreen());
                 }
