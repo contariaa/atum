@@ -4,7 +4,7 @@ import me.voidxwalker.autoreset.Atum;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.Mouse;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.option.ControlsOptionsScreen;
+import net.minecraft.client.gui.screen.option.KeybindsScreen;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -32,7 +32,7 @@ public abstract class MouseMixin {
         // 1 is GLFW for "clicked" (0 -> "released", 2 -> "held down")
         if (action == 1 && Atum.resetKey.matchesMouse(button)) {
             Screen screen = this.client.currentScreen;
-            if (screen instanceof ControlsOptionsScreen && ((ControlsOptionsScreen) screen).focusedBinding == Atum.resetKey) {
+            if (screen instanceof KeybindsScreen && ((KeybindsScreen) screen).selectedKeyBinding == Atum.resetKey) {
                 return;
             }
             Atum.scheduleReset();

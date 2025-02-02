@@ -2,6 +2,7 @@ package me.voidxwalker.autoreset.mixin.access;
 
 import net.minecraft.client.world.GeneratorType;
 import net.minecraft.util.registry.DynamicRegistryManager;
+import net.minecraft.util.registry.RegistryEntry;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.gen.GeneratorOptions;
 import org.spongepowered.asm.mixin.Mixin;
@@ -35,23 +36,13 @@ public interface GeneratorTypeAccessor {
         throw new UnsupportedOperationException();
     }
 
-    @Accessor("SINGLE_BIOME_CAVES")
-    static GeneratorType atum$SINGLE_BIOME_CAVES() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Accessor("SINGLE_BIOME_FLOATING_ISLANDS")
-    static GeneratorType atum$SINGLE_BIOME_FLOATING_ISLANDS() {
-        throw new UnsupportedOperationException();
-    }
-
     @Accessor("DEBUG_ALL_BLOCK_STATES")
     static GeneratorType atum$DEBUG_ALL_BLOCK_STATES() {
         throw new UnsupportedOperationException();
     }
 
     @Invoker("createFixedBiomeOptions")
-    static GeneratorOptions atum$createFixedBiomeOptions(DynamicRegistryManager registryManager, GeneratorOptions generatorOptions, GeneratorType generatorType, Biome biome) {
+    static GeneratorOptions atum$createFixedBiomeOptions(DynamicRegistryManager registryManager, GeneratorOptions generatorOptions, RegistryEntry<Biome> registryEntry) {
         throw new UnsupportedOperationException();
     }
 }

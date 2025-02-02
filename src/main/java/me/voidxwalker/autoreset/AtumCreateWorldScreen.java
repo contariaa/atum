@@ -2,27 +2,24 @@ package me.voidxwalker.autoreset;
 
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.world.CreateWorldScreen;
+import net.minecraft.client.gui.screen.world.MoreOptionsDialog;
+import net.minecraft.client.world.GeneratorType;
 import net.minecraft.resource.DataPackSettings;
 import net.minecraft.util.registry.DynamicRegistryManager;
-import net.minecraft.util.registry.Registry;
-import net.minecraft.world.Difficulty;
-import net.minecraft.world.GameMode;
-import net.minecraft.world.GameRules;
 import net.minecraft.world.gen.GeneratorOptions;
-import net.minecraft.world.level.LevelInfo;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Optional;
+import java.util.OptionalLong;
 
 public class AtumCreateWorldScreen extends CreateWorldScreen {
 
-    private AtumCreateWorldScreen(@Nullable Screen parent, LevelInfo levelInfo, DynamicRegistryManager.Impl registryManager) {
-        super(parent, levelInfo, GeneratorOptions.getDefaultOptions(registryManager.get(Registry.DIMENSION_TYPE_KEY), registryManager.get(Registry.BIOME_KEY), registryManager.get(Registry.CHUNK_GENERATOR_SETTINGS_KEY)), null, DataPackSettings.SAFE_MODE, registryManager);
+    private AtumCreateWorldScreen(@Nullable Screen parent, DataPackSettings dataPackSettings, MoreOptionsDialog moreOptionsDialog) {
+        super(parent, dataPackSettings, moreOptionsDialog);
     }
 
     public static AtumCreateWorldScreen create(@Nullable Screen parent) {
-        return new AtumCreateWorldScreen(
-                parent,
-                new LevelInfo("", GameMode.SURVIVAL, false, Difficulty.EASY, false, new GameRules(), DataPackSettings.SAFE_MODE),
-                DynamicRegistryManager.create()
-        );
+        DynamicRegistryManager.Immutable registryManager = DynamicRegistryManager.BUILTIN.get();
+        return new AtumCreateWorldScreen(parent, DataPackSettings.SAFE_MODE, new MoreOptionsDialog(registryManager, GeneratorOptions.getDefaultOptions(registryManager), Optional.of(GeneratorType.DEFAULT), OptionalLong.empty()));
     }
 }

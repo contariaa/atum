@@ -15,7 +15,7 @@ public abstract class AtumWaitingScreen extends Screen {
 
     @SuppressWarnings("unused")
     protected final void cancelWorldCreation() {
-        this.onClose();
+        this.close();
     }
 
     @SuppressWarnings("unused")
@@ -35,10 +35,10 @@ public abstract class AtumWaitingScreen extends Screen {
     }
 
     @Override
-    public final void onClose() {
+    public final void close() {
         this.onDecided();
         Atum.stopRunning();
-        super.onClose();
+        super.close();
     }
 
     @Override

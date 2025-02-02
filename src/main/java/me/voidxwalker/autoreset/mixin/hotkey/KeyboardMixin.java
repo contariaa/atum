@@ -3,7 +3,7 @@ package me.voidxwalker.autoreset.mixin.hotkey;
 import me.voidxwalker.autoreset.Atum;
 import net.minecraft.client.Keyboard;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.screen.option.ControlsOptionsScreen;
+import net.minecraft.client.gui.screen.option.KeybindsScreen;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -30,7 +30,7 @@ public abstract class KeyboardMixin {
     private void onKey(long window, int key, int scancode, int action, int j, CallbackInfo ci) {
         // 1 is GLFW for "clicked" (0 -> "released", 2 -> "held down")
         if (action == 1 && Atum.resetKey.matchesKey(key, scancode)) {
-            if (this.client.currentScreen instanceof ControlsOptionsScreen && ((ControlsOptionsScreen) this.client.currentScreen).focusedBinding == Atum.resetKey) {
+            if (this.client.currentScreen instanceof KeybindsScreen && ((KeybindsScreen) this.client.currentScreen).selectedKeyBinding == Atum.resetKey) {
                 return;
             }
             Atum.scheduleReset();

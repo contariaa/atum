@@ -1,3 +1,4 @@
 accessWidener v2 named
 
 accessible class net/minecraft/client/gui/screen/world/CreateWorldScreen$Mode
+accessible method net/minecraft/client/gui/screen/world/CreateWorldScreen <init> (Lnet/minecraft/client/gui/screen/Screen;Lnet/minecraft/resource/DataPackSettings;Lnet/minecraft/client/gui/screen/world/MoreOptionsDialog;)V

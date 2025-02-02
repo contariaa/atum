@@ -14,10 +14,7 @@ import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.world.GeneratorType;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
-import net.minecraft.util.registry.BuiltinRegistries;
-import net.minecraft.util.registry.DynamicRegistryManager;
-import net.minecraft.util.registry.Registry;
-import net.minecraft.util.registry.RegistryKey;
+import net.minecraft.util.registry.*;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.gen.GeneratorOptions;
 import net.minecraft.world.gen.chunk.FlatChunkGenerator;
@@ -36,7 +33,7 @@ public abstract class MoreOptionsDialogMixin implements IMoreOptionsDialog {
     @Shadow
     private GeneratorOptions generatorOptions;
     @Shadow
-    private DynamicRegistryManager.Impl registryManager;
+    private DynamicRegistryManager.Immutable registryManager;
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
     @Shadow
     private OptionalLong seed;
@@ -79,17 +76,15 @@ public abstract class MoreOptionsDialogMixin implements IMoreOptionsDialog {
                         GeneratorOptions.getRegistryWithReplacedOverworldGenerator(
                                 this.registryManager.get(Registry.DIMENSION_TYPE_KEY),
                                 this.generatorOptions.getDimensions(),
-                                new FlatChunkGenerator(generatorConfig)
+                                new FlatChunkGenerator(this.registryManager.get(Registry.STRUCTURE_SET_KEY), generatorConfig)
                         )
                 ));
                 break;
             case SINGLE_BIOME_SURFACE:
-            case SINGLE_BIOME_CAVES:
-            case SINGLE_BIOME_FLOATING_ISLANDS:
                 Identifier id = IdentifierUtil.parse(Atum.config.generatorDetails);
-                Optional<Biome> biome = BuiltinRegistries.BIOME.getOrEmpty(id);
+                Optional<RegistryEntry<Biome>> biome = BuiltinRegistries.BIOME.getOrEmpty(id).flatMap(BuiltinRegistries.BIOME::getKey).map(BuiltinRegistries.BIOME::entryOf);
                 if (biome.isPresent()) {
-                    this.generatorOptions = GeneratorTypeAccessor.atum$createFixedBiomeOptions(this.registryManager, this.generatorOptions, Atum.config.generatorType.get(), biome.get());
+                    this.generatorOptions = GeneratorTypeAccessor.atum$createFixedBiomeOptions(this.registryManager, this.generatorOptions, biome.get());
                 } else {
                     Atum.LOGGER.warn("Failed to parse biome: {}", id);
                 }
@@ -113,15 +108,16 @@ public abstract class MoreOptionsDialogMixin implements IMoreOptionsDialog {
 
         Atum.config.generatorDetails = switch (Atum.config.generatorType) {
             case FLAT ->
+                    // TODO: This now also fails with "Can't access registry"
                     FlatChunkGeneratorConfig.CODEC.encode(
-                        ((FlatChunkGenerator) this.generatorOptions.getChunkGenerator()).getConfig(),
-                        JsonOps.INSTANCE,
-                        new JsonObject()
+                            ((FlatChunkGenerator) this.generatorOptions.getChunkGenerator()).getConfig(),
+                            JsonOps.INSTANCE,
+                            new JsonObject()
                     ).resultOrPartial(
-                        error -> Atum.LOGGER.warn("Failed to serialize flat world generator details! {}", error)
+                            error -> Atum.LOGGER.warn("Failed to serialize flat world generator details! {}", error)
                     ).map(JsonElement::toString).orElse("");
-            case SINGLE_BIOME_SURFACE, SINGLE_BIOME_CAVES, SINGLE_BIOME_FLOATING_ISLANDS ->
-                    BuiltinRegistries.BIOME.getKey(this.generatorOptions.getChunkGenerator().getBiomeSource().getBiomes().get(0))
+            case SINGLE_BIOME_SURFACE ->
+                    this.generatorOptions.getChunkGenerator().getBiomeSource().getBiomes().iterator().next().getKey()
                             .map(RegistryKey::getValue)
                             .map(Identifier::toString)
                             .orElse("");

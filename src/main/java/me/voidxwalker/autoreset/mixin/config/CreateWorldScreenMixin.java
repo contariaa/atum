@@ -96,7 +96,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
     }
 
     @Inject(
-            method = "<init>(Lnet/minecraft/client/gui/screen/Screen;Lnet/minecraft/world/level/LevelInfo;Lnet/minecraft/world/gen/GeneratorOptions;Ljava/nio/file/Path;Lnet/minecraft/resource/DataPackSettings;Lnet/minecraft/util/registry/DynamicRegistryManager$Impl;)V",
+            method = "<init>",
             at = @At("TAIL")
     )
     private void loadAtumConfigurations(CallbackInfo ci) {
@@ -313,7 +313,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
         if (Atum.inDemoMode()) {
             String demoWorldName = Atum.config.attemptTracker.incrementAndGetWorldName(AttemptTracker.Type.DEMO);
             Atum.LOGGER.info("Creating \"{}\" with demo seed...", demoWorldName);
-            DynamicRegistryManager.Impl registryManager = DynamicRegistryManager.create();
+            DynamicRegistryManager registryManager = DynamicRegistryManager.BUILTIN.get();
             MinecraftClient.getInstance().createWorld(demoWorldName, MinecraftServer.DEMO_LEVEL_INFO, registryManager, GeneratorOptions.createDemo(registryManager));
             return;
         }

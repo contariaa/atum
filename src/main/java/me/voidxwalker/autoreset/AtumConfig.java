@@ -285,7 +285,7 @@ public class AtumConfig implements SpeedrunConfig {
             texts.add(TextUtil.translatable("selectWorld.bonusItems").append(" ").append(ScreenTexts.ON));
         }
         if (this.generatorType != AtumGeneratorType.DEFAULT) {
-            texts.add(TextUtil.translatable("selectWorld.mapType").append(" ").append(this.generatorType.get().getTranslationKey()));
+            texts.add(TextUtil.translatable("selectWorld.mapType").append(" ").append(this.generatorType.get().getDisplayName()));
         }
         if (this.modifiedGameRules) {
             texts.add(TextUtil.translatable("selectWorld.gameRules").append(": Modified"));
@@ -419,8 +419,6 @@ public class AtumConfig implements SpeedrunConfig {
         LARGE_BIOMES(GeneratorTypeAccessor.atum$LARGE_BIOMES()),
         AMPLIFIED(GeneratorTypeAccessor.atum$AMPLIFIED()),
         SINGLE_BIOME_SURFACE(GeneratorTypeAccessor.atum$SINGLE_BIOME_SURFACE()),
-        SINGLE_BIOME_CAVES(GeneratorTypeAccessor.atum$SINGLE_BIOME_CAVES()),
-        SINGLE_BIOME_FLOATING_ISLANDS(GeneratorTypeAccessor.atum$SINGLE_BIOME_FLOATING_ISLANDS()),
         DEBUG(GeneratorTypeAccessor.atum$DEBUG_ALL_BLOCK_STATES());
 
         private final GeneratorType generatorType;

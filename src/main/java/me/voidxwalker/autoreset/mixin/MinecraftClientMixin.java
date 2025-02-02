@@ -14,6 +14,7 @@ import net.minecraft.client.world.ClientWorld;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.profiler.ProfileResult;
+import net.minecraft.world.SaveProperties;
 import net.minecraft.world.gen.GeneratorOptions;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
@@ -78,7 +79,7 @@ public abstract class MinecraftClientMixin {
     }
 
     @Inject(
-            method = "startIntegratedServer(Ljava/lang/String;Lnet/minecraft/util/registry/DynamicRegistryManager$Impl;Ljava/util/function/Function;Lcom/mojang/datafixers/util/Function4;ZLnet/minecraft/client/MinecraftClient$WorldLoadAction;)V",
+            method = "startIntegratedServer(Ljava/lang/String;Ljava/util/function/Function;Ljava/util/function/Function;ZLnet/minecraft/client/MinecraftClient$WorldLoadAction;)V",
             at = @At(
                     value = "INVOKE",
                     target = "Lnet/minecraft/server/integrated/IntegratedServer;isLoading()Z",
@@ -92,11 +93,11 @@ public abstract class MinecraftClientMixin {
     }
 
     @ModifyVariable(
-            method = "startIntegratedServer(Ljava/lang/String;Lnet/minecraft/util/registry/DynamicRegistryManager$Impl;Ljava/util/function/Function;Lcom/mojang/datafixers/util/Function4;ZLnet/minecraft/client/MinecraftClient$WorldLoadAction;)V",
+            method = "startIntegratedServer(Ljava/lang/String;Ljava/util/function/Function;Ljava/util/function/Function;ZLnet/minecraft/client/MinecraftClient$WorldLoadAction;)V",
             at = @At("STORE")
     )
-    private LevelLoadingScreen addSeedToLLS(LevelLoadingScreen levelLoadingScreen, @Local MinecraftClient.IntegratedResourceManager integratedResourceManager) {
-        String seed = ((ISeedStringHolder) integratedResourceManager.getSaveProperties().getGeneratorOptions()).atum$getSeedString();
+    private LevelLoadingScreen addSeedToLLS(LevelLoadingScreen levelLoadingScreen, @Local SaveProperties saveProperties) {
+        String seed = ((ISeedStringHolder) saveProperties.getGeneratorOptions()).atum$getSeedString();
         if (seed != null) {
             ((ISeedStringHolder) levelLoadingScreen).atum$setSeedString(seed);
         }
@@ -104,7 +105,7 @@ public abstract class MinecraftClientMixin {
     }
 
     @ModifyArg(
-            method = "method_31125",
+            method = "method_40187",
             at = @At(
                     value = "INVOKE",
                     target = "Lnet/minecraft/world/level/LevelProperties;<init>(Lnet/minecraft/world/level/LevelInfo;Lnet/minecraft/world/gen/GeneratorOptions;Lcom/mojang/serialization/Lifecycle;)V"
