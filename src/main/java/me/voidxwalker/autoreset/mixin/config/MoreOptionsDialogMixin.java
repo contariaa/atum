@@ -80,7 +80,7 @@ public abstract class MoreOptionsDialogMixin implements IMoreOptionsDialog {
                 Identifier biomeID = new Identifier(Atum.config.generatorDetails);
                 Optional<Biome> biome = Registry.BIOME.getOrEmpty(new Identifier(Atum.config.generatorDetails));
                 if (biome.isPresent()) {
-                    this.generatorOptions = GeneratorTypeAccessor.callCreateFixedBiomeOptions(this.generatorOptions, Atum.config.generatorType.get(), biome.get());
+                    this.generatorOptions = GeneratorTypeAccessor.atum$createFixedBiomeOptions(this.generatorOptions, Atum.config.generatorType.get(), biome.get());
                 } else {
                     Atum.LOGGER.warn("Failed to parse biome: {}", biomeID);
                 }

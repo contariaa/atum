@@ -131,7 +131,7 @@ public class AtumConfig implements SpeedrunConfig {
             @Override
             public <T extends GameRules.Rule<T>> void accept(GameRules.Key<T> key, GameRules.Type<T> type) {
                 if (jsonElement.getAsJsonObject().has(key.getName())) {
-                    ((RuleAccessor) gameRules.get(key)).callDeserialize(jsonElement.getAsJsonObject().get(key.getName()).getAsString());
+                    ((RuleAccessor) gameRules.get(key)).atum$deserialize(jsonElement.getAsJsonObject().get(key.getName()).getAsString());
                 }
             }
         });
@@ -273,7 +273,7 @@ public class AtumConfig implements SpeedrunConfig {
     private List<Text> getIllegalSettingsTexts() {
         List<Text> texts = new ArrayList<>();
         if (this.gameMode != CreateWorldScreen.Mode.SURVIVAL && this.gameMode != CreateWorldScreen.Mode.HARDCORE) {
-            texts.add(TextUtil.translatable("selectWorld.gameMode").append(": ").append(TextUtil.translatable("selectWorld.gameMode." + ((CreateWorldScreen$ModeAccessor) (Object) this.gameMode).getTranslationSuffix())));
+            texts.add(TextUtil.translatable("selectWorld.gameMode").append(": ").append(TextUtil.translatable("selectWorld.gameMode." + ((CreateWorldScreen$ModeAccessor) (Object) this.gameMode).atum$getTranslationSuffix())));
         }
         if (this.cheatsEnabled) {
             texts.add(TextUtil.translatable("selectWorld.allowCommands").append(" ").append(ScreenTexts.ON));
@@ -414,14 +414,14 @@ public class AtumConfig implements SpeedrunConfig {
 
     @SuppressWarnings("unused")
     public enum AtumGeneratorType {
-        DEFAULT(GeneratorTypeAccessor.getDEFAULT()),
-        FLAT(GeneratorTypeAccessor.getFLAT()),
-        LARGE_BIOMES(GeneratorTypeAccessor.getLARGE_BIOMES()),
-        AMPLIFIED(GeneratorTypeAccessor.getAMPLIFIED()),
-        SINGLE_BIOME_SURFACE(GeneratorTypeAccessor.getSINGLE_BIOME_SURFACE()),
-        SINGLE_BIOME_CAVES(GeneratorTypeAccessor.getSINGLE_BIOME_CAVES()),
-        SINGLE_BIOME_FLOATING_ISLANDS(GeneratorTypeAccessor.getSINGLE_BIOME_FLOATING_ISLANDS()),
-        DEBUG(GeneratorTypeAccessor.getDEBUG_ALL_BLOCK_STATES());
+        DEFAULT(GeneratorTypeAccessor.atum$DEFAULT()),
+        FLAT(GeneratorTypeAccessor.atum$FLAT()),
+        LARGE_BIOMES(GeneratorTypeAccessor.atum$LARGE_BIOMES()),
+        AMPLIFIED(GeneratorTypeAccessor.atum$AMPLIFIED()),
+        SINGLE_BIOME_SURFACE(GeneratorTypeAccessor.atum$SINGLE_BIOME_SURFACE()),
+        SINGLE_BIOME_CAVES(GeneratorTypeAccessor.atum$SINGLE_BIOME_CAVES()),
+        SINGLE_BIOME_FLOATING_ISLANDS(GeneratorTypeAccessor.atum$SINGLE_BIOME_FLOATING_ISLANDS()),
+        DEBUG(GeneratorTypeAccessor.atum$DEBUG_ALL_BLOCK_STATES());
 
         private final GeneratorType generatorType;
 

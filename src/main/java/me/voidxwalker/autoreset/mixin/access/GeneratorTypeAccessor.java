@@ -9,48 +9,48 @@ import org.spongepowered.asm.mixin.gen.Invoker;
 
 @Mixin(GeneratorType.class)
 public interface GeneratorTypeAccessor {
-    @Accessor
-    static GeneratorType getDEFAULT() {
+    @Accessor("DEFAULT")
+    static GeneratorType atum$DEFAULT() {
         throw new UnsupportedOperationException();
     }
 
-    @Accessor
-    static GeneratorType getFLAT() {
+    @Accessor("FLAT")
+    static GeneratorType atum$FLAT() {
         throw new UnsupportedOperationException();
     }
 
-    @Accessor
-    static GeneratorType getLARGE_BIOMES() {
+    @Accessor("LARGE_BIOMES")
+    static GeneratorType atum$LARGE_BIOMES() {
         throw new UnsupportedOperationException();
     }
 
-    @Accessor
-    static GeneratorType getAMPLIFIED() {
+    @Accessor("AMPLIFIED")
+    static GeneratorType atum$AMPLIFIED() {
         throw new UnsupportedOperationException();
     }
 
-    @Accessor
-    static GeneratorType getSINGLE_BIOME_SURFACE() {
+    @Accessor("SINGLE_BIOME_SURFACE")
+    static GeneratorType atum$SINGLE_BIOME_SURFACE() {
         throw new UnsupportedOperationException();
     }
 
-    @Accessor
-    static GeneratorType getSINGLE_BIOME_CAVES() {
+    @Accessor("SINGLE_BIOME_CAVES")
+    static GeneratorType atum$SINGLE_BIOME_CAVES() {
         throw new UnsupportedOperationException();
     }
 
-    @Accessor
-    static GeneratorType getSINGLE_BIOME_FLOATING_ISLANDS() {
+    @Accessor("SINGLE_BIOME_FLOATING_ISLANDS")
+    static GeneratorType atum$SINGLE_BIOME_FLOATING_ISLANDS() {
         throw new UnsupportedOperationException();
     }
 
-    @Accessor
-    static GeneratorType getDEBUG_ALL_BLOCK_STATES() {
+    @Accessor("DEBUG_ALL_BLOCK_STATES")
+    static GeneratorType atum$DEBUG_ALL_BLOCK_STATES() {
         throw new UnsupportedOperationException();
     }
 
-    @Invoker
-    static GeneratorOptions callCreateFixedBiomeOptions(GeneratorOptions generatorOptions, GeneratorType generatorType, Biome biome) {
+    @Invoker("createFixedBiomeOptions")
+    static GeneratorOptions atum$createFixedBiomeOptions(GeneratorOptions generatorOptions, GeneratorType generatorType, Biome biome) {
         throw new UnsupportedOperationException();
     }
 }

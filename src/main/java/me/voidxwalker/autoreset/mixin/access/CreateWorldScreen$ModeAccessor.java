@@ -6,6 +6,6 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 
 @Mixin(CreateWorldScreen.Mode.class)
 public interface CreateWorldScreen$ModeAccessor {
-    @Accessor
-    String getTranslationSuffix();
+    @Accessor("translationSuffix")
+    String atum$getTranslationSuffix();
 }
