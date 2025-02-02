@@ -15,7 +15,7 @@ import org.jetbrains.annotations.Nullable;
 public class AtumCreateWorldScreen extends CreateWorldScreen {
 
     private AtumCreateWorldScreen(@Nullable Screen parent, LevelInfo levelInfo, DynamicRegistryManager.Impl registryManager) {
-        super(parent, levelInfo, GeneratorOptions.getDefaultOptions(registryManager.get(Registry.DIMENSION_TYPE_KEY), registryManager.get(Registry.BIOME_KEY), registryManager.get(Registry.NOISE_SETTINGS_WORLDGEN)), null, DataPackSettings.SAFE_MODE, registryManager);
+        super(parent, levelInfo, GeneratorOptions.getDefaultOptions(registryManager.get(Registry.DIMENSION_TYPE_KEY), registryManager.get(Registry.BIOME_KEY), registryManager.get(Registry.CHUNK_GENERATOR_SETTINGS_KEY)), null, DataPackSettings.SAFE_MODE, registryManager);
     }
 
     public static AtumCreateWorldScreen create(@Nullable Screen parent) {

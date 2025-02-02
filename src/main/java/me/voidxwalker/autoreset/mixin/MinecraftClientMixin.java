@@ -47,7 +47,7 @@ public abstract class MinecraftClientMixin {
     protected abstract boolean shouldMonitorTickDuration();
 
     @Shadow
-    public abstract void openScreen(@Nullable Screen screen);
+    public abstract void setScreen(@Nullable Screen screen);
 
     @Shadow
     public abstract void disconnect(Screen screen);
@@ -70,7 +70,7 @@ public abstract class MinecraftClientMixin {
                         this.world.disconnect();
                         this.disconnect(new SaveLevelScreen(TextUtil.translatable("menu.savingLevel")));
                     }
-                    this.openScreen(new TitleScreen());
+                    this.setScreen(new TitleScreen());
                 }
             }
             Atum.createNewWorld();
@@ -159,10 +159,9 @@ public abstract class MinecraftClientMixin {
     private boolean clickButton(Screen screen, String... translationKeys) {
         for (String translationKey : translationKeys) {
             for (Element element : screen.children()) {
-                if (!(element instanceof ButtonWidget)) {
+                if (!(element instanceof ButtonWidget button)) {
                     continue;
                 }
-                ButtonWidget button = ((ButtonWidget) element);
                 Text text = button.getMessage();
                 if (text instanceof TranslatableText && ((TranslatableText) text).getKey().equals(translationKey)) {
                     button.onPress();

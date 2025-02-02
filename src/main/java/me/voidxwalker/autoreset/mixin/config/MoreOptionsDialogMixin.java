@@ -76,7 +76,7 @@ public abstract class MoreOptionsDialogMixin implements IMoreOptionsDialog {
                         this.generatorOptions.getSeed(),
                         this.generatorOptions.shouldGenerateStructures(),
                         this.generatorOptions.hasBonusChest(),
-                        GeneratorOptions.method_28608(
+                        GeneratorOptions.getRegistryWithReplacedOverworldGenerator(
                                 this.registryManager.get(Registry.DIMENSION_TYPE_KEY),
                                 this.generatorOptions.getDimensions(),
                                 new FlatChunkGenerator(generatorConfig)
@@ -111,26 +111,22 @@ public abstract class MoreOptionsDialogMixin implements IMoreOptionsDialog {
         Atum.config.structures = this.generatorOptions.shouldGenerateStructures();
         Atum.config.bonusChest = this.generatorOptions.hasBonusChest();
 
-        String generatorDetails = "";
-        switch (Atum.config.generatorType) {
-            case FLAT:
-                generatorDetails = FlatChunkGeneratorConfig.CODEC.encode(
+        Atum.config.generatorDetails = switch (Atum.config.generatorType) {
+            case FLAT ->
+                    FlatChunkGeneratorConfig.CODEC.encode(
                         ((FlatChunkGenerator) this.generatorOptions.getChunkGenerator()).getConfig(),
                         JsonOps.INSTANCE,
                         new JsonObject()
-                ).resultOrPartial(
+                    ).resultOrPartial(
                         error -> Atum.LOGGER.warn("Failed to serialize flat world generator details! {}", error)
-                ).map(JsonElement::toString).orElse("");
-                break;
-            case SINGLE_BIOME_SURFACE:
-            case SINGLE_BIOME_CAVES:
-            case SINGLE_BIOME_FLOATING_ISLANDS:
-                generatorDetails = BuiltinRegistries.BIOME.getKey(this.generatorOptions.getChunkGenerator().getBiomeSource().getBiomes().get(0))
-                        .map(RegistryKey::getValue)
-                        .map(Identifier::toString)
-                        .orElse("");
-        }
-        Atum.config.generatorDetails = generatorDetails;
+                    ).map(JsonElement::toString).orElse("");
+            case SINGLE_BIOME_SURFACE, SINGLE_BIOME_CAVES, SINGLE_BIOME_FLOATING_ISLANDS ->
+                    BuiltinRegistries.BIOME.getKey(this.generatorOptions.getChunkGenerator().getBiomeSource().getBiomes().get(0))
+                            .map(RegistryKey::getValue)
+                            .map(Identifier::toString)
+                            .orElse("");
+            default -> "";
+        };
     }
 
     @Override

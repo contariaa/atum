@@ -10,6 +10,9 @@ import me.voidxwalker.autoreset.api.seedprovider.SeedProvider;
 import me.voidxwalker.autoreset.interfaces.IMoreOptionsDialog;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
+import net.minecraft.client.gui.Drawable;
+import net.minecraft.client.gui.Element;
+import net.minecraft.client.gui.Selectable;
 import net.minecraft.client.gui.screen.ConfirmScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ScreenTexts;
@@ -42,7 +45,6 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Mixin(CreateWorldScreen.class)
@@ -52,9 +54,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
     private Screen parent;
 
     @Shadow
-    private Difficulty field_24290;
-    @Shadow
-    private Difficulty field_24289;
+    private Difficulty currentDifficulty;
     @Shadow
     private CreateWorldScreen.Mode currentMode;
     @Shadow
@@ -89,6 +89,8 @@ public abstract class CreateWorldScreenMixin extends Screen {
     @Shadow
     protected abstract void createLevel();
 
+    @Shadow protected abstract <T extends Element & Drawable & Selectable> T addDrawableChild(T drawableElement);
+
     protected CreateWorldScreenMixin(Text title) {
         super(title);
     }
@@ -110,8 +112,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
             method = "init",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/client/gui/screen/world/CreateWorldScreen;addButton(Lnet/minecraft/client/gui/widget/ClickableWidget;)Lnet/minecraft/client/gui/widget/ClickableWidget;",
-                    ordinal = 0
+                    target = "Lnet/minecraft/client/gui/screen/world/CreateWorldScreen;addDrawableChild(Lnet/minecraft/client/gui/Element;)Lnet/minecraft/client/gui/Element;"
             ),
             slice = @Slice(
                     from = @At(
@@ -120,7 +121,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
                     )
             )
     )
-    private boolean removeCancelButton(CreateWorldScreen screen, ClickableWidget button) {
+    private boolean removeCancelButton(CreateWorldScreen instance, Element drawableElement) {
         return !this.isAtum();
     }
 
@@ -209,7 +210,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
     }
 
     @ModifyExpressionValue(
-            method = "method_29685",
+            method = "copyDataPack(Ljava/nio/file/Path;Lnet/minecraft/client/MinecraftClient;)Ljava/nio/file/Path;",
             at = @At(
                     value = "INVOKE",
                     target = "Ljava/util/stream/Stream;filter(Ljava/util/function/Predicate;)Ljava/util/stream/Stream;"
@@ -241,7 +242,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
                 }
             }
             return false;
-        }).collect(Collectors.toList()).stream();
+        }).toList().stream();
 
         if (!expected.isEmpty()) {
             Atum.config.dataPackMismatch = true;
@@ -253,7 +254,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
     @Unique
     private void load() {
         this.currentMode = Atum.config.gameMode;
-        this.field_24290 = this.field_24289 = Atum.config.difficulty;
+        this.currentDifficulty = Atum.config.difficulty;
         this.cheatsEnabled = Atum.config.cheatsEnabled;
         this.tweakedCheats = true;
         if (Atum.config.hasModifiedGameRules()) {
@@ -281,7 +282,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
             return;
         }
 
-        this.dataPackTempDir = CreateWorldScreen.method_29685(Atum.config.dataPackDirectory, this.client);
+        this.dataPackTempDir = CreateWorldScreen.copyDataPack(Atum.config.dataPackDirectory, this.client);
         if (this.dataPackTempDir == null) {
             Atum.config.dataPackMismatch = true;
             Atum.LOGGER.warn("Data pack mismatch, failed to copy data packs!");
@@ -299,7 +300,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
             return seed.get();
         }
         if (MinecraftClient.getInstance().isOnThread()) {
-            MinecraftClient.getInstance().openScreen(Atum.getSeedProvider().getWaitingScreen());
+            MinecraftClient.getInstance().setScreen(Atum.getSeedProvider().getWaitingScreen());
             return null;
         }
         // Note: If a mod ever makes AtumCreateWorldScreens in parallel, the next two lines would cause a race condition.
@@ -313,14 +314,13 @@ public abstract class CreateWorldScreenMixin extends Screen {
             String demoWorldName = Atum.config.attemptTracker.incrementAndGetWorldName(AttemptTracker.Type.DEMO);
             Atum.LOGGER.info("Creating \"{}\" with demo seed...", demoWorldName);
             DynamicRegistryManager.Impl registryManager = DynamicRegistryManager.create();
-            MinecraftClient.getInstance().createWorld(demoWorldName, MinecraftServer.DEMO_LEVEL_INFO, registryManager, GeneratorOptions.method_31112(registryManager));
+            MinecraftClient.getInstance().createWorld(demoWorldName, MinecraftServer.DEMO_LEVEL_INFO, registryManager, GeneratorOptions.createDemo(registryManager));
             return;
         }
 
         // micro optimization, vanilla calls the changed listener twice,
         // once on setText and once on setCursorToEnd
-        this.levelNameField.setChangedListener(string -> {
-        });
+        this.levelNameField.setChangedListener(string -> {});
         this.levelNameField.setText(
                 Atum.config.attemptTracker.incrementAndGetWorldName(seed.isEmpty() ? AttemptTracker.Type.RSG : AttemptTracker.Type.SSG)
         );
@@ -345,10 +345,10 @@ public abstract class CreateWorldScreenMixin extends Screen {
 
         this.dataPacksButton.active = this.dataPackTempDir != null;
         this.createLevelButton.setMessage(TextUtil.translatable("gui.done"));
-        this.demoModeButton = this.addButton(new ButtonWidget(
+        this.demoModeButton = this.addDrawableChild(new ButtonWidget(
                 this.width / 2 + 5, 151, 150, 20,
-                TextUtil.translatable("atum.config.demoMode", ScreenTexts.getToggleText(Atum.config.demoMode)),
-                button -> button.setMessage(TextUtil.translatable("atum.config.demoMode", ScreenTexts.getToggleText(Atum.config.demoMode = !Atum.config.demoMode)))
+                TextUtil.translatable("atum.config.demoMode", ScreenTexts.onOrOff(Atum.config.demoMode)),
+                button -> button.setMessage(TextUtil.translatable("atum.config.demoMode", ScreenTexts.onOrOff(Atum.config.demoMode = !Atum.config.demoMode)))
         ));
         this.demoModeButton.visible = this.moreOptionsOpen;
     }
@@ -356,7 +356,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
     @Unique
     private void save() {
         Atum.config.gameMode = this.currentMode;
-        Atum.config.difficulty = this.field_24289;
+        Atum.config.difficulty = this.currentDifficulty;
         Atum.config.cheatsEnabled = this.cheatsEnabled;
         Atum.config.setGameRules(this.gameRules.copy());
         Atum.config.setDataPackSettings(this.dataPackSettings);
@@ -368,15 +368,15 @@ public abstract class CreateWorldScreenMixin extends Screen {
     private void closeConfigScreen() {
         if (Atum.config.updateHasLegalSettings()) {
             Atum.config.save();
-            MinecraftClient.getInstance().openScreen(this.parent);
+            MinecraftClient.getInstance().setScreen(this.parent);
             return;
         }
-        MinecraftClient.getInstance().openScreen(new ConfirmScreen(confirm -> {
+        MinecraftClient.getInstance().setScreen(new ConfirmScreen(confirm -> {
             if (!confirm) {
                 Atum.config.resetToLegalSettings();
             }
             Atum.config.save();
-            MinecraftClient.getInstance().openScreen(this.parent);
+            MinecraftClient.getInstance().setScreen(this.parent);
         }, TextUtil.translatable("atum.menu.legal_settings.warning"), Atum.config.getIllegalSettingsWarning(), TextUtil.translatable("atum.menu.legal_settings.confirm"), TextUtil.translatable("atum.menu.legal_settings.reset")));
     }
 
