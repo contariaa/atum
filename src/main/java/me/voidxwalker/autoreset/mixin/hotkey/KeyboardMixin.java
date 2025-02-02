@@ -18,7 +18,15 @@ public abstract class KeyboardMixin {
     private MinecraftClient client;
 
     // injecting at Keyboard#debugCrashStartTime ensures the window handle check has succeeded
-    @Inject(method = "onKey", at = @At(value = "FIELD", target = "Lnet/minecraft/client/Keyboard;debugCrashStartTime:J", ordinal = 0), cancellable = true)
+    @Inject(
+            method = "onKey",
+            at = @At(
+                    value = "FIELD",
+                    target = "Lnet/minecraft/client/Keyboard;debugCrashStartTime:J",
+                    ordinal = 0
+            ),
+            cancellable = true
+    )
     private void onKey(long window, int key, int scancode, int action, int j, CallbackInfo ci) {
         // 1 is GLFW for "clicked" (0 -> "released", 2 -> "held down")
         if (action == 1 && Atum.resetKey.matchesKey(key, scancode)) {

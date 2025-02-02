@@ -15,11 +15,15 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(OptionsScreen.class)
 public abstract class OptionsScreenMixin extends Screen {
+
     protected OptionsScreenMixin(Text title) {
         super(title);
     }
 
-    @Inject(method = "init", at = @At("TAIL"))
+    @Inject(
+            method = "init",
+            at = @At("TAIL")
+    )
     private void addStopResetsButton(CallbackInfo ci) {
         if (Atum.isRunning()) {
             this.addButton(new ButtonWidget(0, this.height - 20, 100, 20, new TranslatableText("atum.menu.stop_resets"), button -> {

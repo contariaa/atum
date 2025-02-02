@@ -1,13 +1,12 @@
 package me.voidxwalker.autoreset.mixin;
 
+import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import me.voidxwalker.autoreset.Atum;
 import me.voidxwalker.autoreset.interfaces.ISeedStringHolder;
 import net.minecraft.world.gen.GeneratorOptions;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.Objects;
 
@@ -15,6 +14,23 @@ import java.util.Objects;
 public abstract class GeneratorOptionsMixin implements ISeedStringHolder {
     @Unique
     private String seedString;
+
+    @ModifyReturnValue(
+            method = {
+                    "withHardcore",
+                    "withDimensions",
+                    "withBonusChest",
+                    "toggleBonusChest",
+                    "toggleGenerateStructures"
+            },
+            at = @At("RETURN")
+    )
+    private GeneratorOptions transferSeedString(GeneratorOptions options) {
+        if (this.seedString != null) {
+            ((ISeedStringHolder) options).atum$setSeedString(this.seedString);
+        }
+        return options;
+    }
 
     @Override
     public void atum$setSeedString(String seedString) {
@@ -25,10 +41,5 @@ public abstract class GeneratorOptionsMixin implements ISeedStringHolder {
     @Override
     public String atum$getSeedString() {
         return this.seedString;
-    }
-
-    @Inject(method = {"withHardcore", "withDimensions", "withBonusChest", "toggleBonusChest", "toggleGenerateStructures"}, at = @At("RETURN"))
-    private void transferSeedString(CallbackInfoReturnable<GeneratorOptions> cir) {
-        if (this.seedString != null) ((ISeedStringHolder) cir.getReturnValue()).atum$setSeedString(this.seedString);
     }
 }

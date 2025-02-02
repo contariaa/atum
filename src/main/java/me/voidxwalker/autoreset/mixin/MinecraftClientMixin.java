@@ -4,7 +4,6 @@ import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import com.llamalad7.mixinextras.sugar.Local;
 import me.voidxwalker.autoreset.Atum;
 import me.voidxwalker.autoreset.interfaces.ISeedStringHolder;
-import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.screen.*;
@@ -24,8 +23,6 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-
-import java.util.Optional;
 
 // We set priority to 500 so our executeReset inject runs right before worldpreview checks if it should reset
 @Mixin(value = MinecraftClient.class, priority = 500)
@@ -53,28 +50,14 @@ public abstract class MinecraftClientMixin {
     @Shadow
     public abstract void disconnect(Screen screen);
 
-    @Inject(method = "disconnect(Lnet/minecraft/client/gui/screen/Screen;)V", at = @At("TAIL"))
-    private void fixGhostPie(CallbackInfo ci) {
-        this.tickProfilerResult = null;
-        this.options.debugProfilerEnabled = false;
-    }
-
-    @ModifyArg(method = "run", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/MinecraftClient;endMonitor(ZLnet/minecraft/util/TickDurationMonitor;)V"))
-    private boolean fixGhostPieBlink(boolean active) {
-        return active && this.shouldMonitorTickDuration();
-    }
-
-    @ModifyReturnValue(method = "isDemo", at = @At("RETURN"))
-    private boolean demoMode(boolean isDemo) {
-        return isDemo || Atum.inDemoMode();
-    }
-
-    @Inject(method = "cleanUpAfterCrash", at = @At("HEAD"))
-    private void stopRunningOnCrash(CallbackInfo ci) {
-        Atum.stopRunning();
-    }
-
-    @Inject(method = "run", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/MinecraftClient;render(Z)V", shift = At.Shift.AFTER))
+    @Inject(
+            method = "run",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/client/MinecraftClient;render(Z)V",
+                    shift = At.Shift.AFTER
+            )
+    )
     private void executeReset(CallbackInfo ci) {
         while (Atum.shouldReset()) {
             if (Atum.isInWorld()) {
@@ -92,11 +75,66 @@ public abstract class MinecraftClientMixin {
         }
     }
 
-    @Inject(method = "startIntegratedServer(Ljava/lang/String;Lnet/minecraft/util/registry/RegistryTracker$Modifiable;Ljava/util/function/Function;Lcom/mojang/datafixers/util/Function4;ZLnet/minecraft/client/MinecraftClient$WorldLoadAction;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/integrated/IntegratedServer;isLoading()Z", shift = At.Shift.AFTER))
+    @Inject(
+            method = "startIntegratedServer(Ljava/lang/String;Lnet/minecraft/util/registry/RegistryTracker$Modifiable;Ljava/util/function/Function;Lcom/mojang/datafixers/util/Function4;ZLnet/minecraft/client/MinecraftClient$WorldLoadAction;)V",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/server/integrated/IntegratedServer;isLoading()Z",
+                    shift = At.Shift.AFTER
+            )
+    )
     private void resetPreview(CallbackInfo ci) {
         if (Atum.HAS_WORLDPREVIEW && Atum.isResetScheduled()) {
             this.clickButton(this.currentScreen, "menu.returnToMenu");
         }
+    }
+
+    @ModifyVariable(
+            method = "startIntegratedServer(Ljava/lang/String;Lnet/minecraft/util/registry/RegistryTracker$Modifiable;Ljava/util/function/Function;Lcom/mojang/datafixers/util/Function4;ZLnet/minecraft/client/MinecraftClient$WorldLoadAction;)V",
+            at = @At("STORE")
+    )
+    private LevelLoadingScreen addSeedToLLS(LevelLoadingScreen levelLoadingScreen, @Local MinecraftClient.IntegratedResourceManager integratedResourceManager) {
+        String seed = ((ISeedStringHolder) integratedResourceManager.getSaveProperties().getGeneratorOptions()).atum$getSeedString();
+        if (seed != null) {
+            ((ISeedStringHolder) levelLoadingScreen).atum$setSeedString(seed);
+        }
+        return levelLoadingScreen;
+    }
+
+    @ModifyReturnValue(
+            method = "isDemo",
+            at = @At("RETURN")
+    )
+    private boolean demoMode(boolean isDemo) {
+        return isDemo || Atum.inDemoMode();
+    }
+
+    @Inject(
+            method = "disconnect(Lnet/minecraft/client/gui/screen/Screen;)V",
+            at = @At("TAIL")
+    )
+    private void fixGhostPie(CallbackInfo ci) {
+        this.tickProfilerResult = null;
+        this.options.debugProfilerEnabled = false;
+    }
+
+    @ModifyArg(
+            method = "run",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/client/MinecraftClient;endMonitor(ZLnet/minecraft/util/TickDurationMonitor;)V"
+            )
+    )
+    private boolean fixGhostPieBlink(boolean active) {
+        return active && this.shouldMonitorTickDuration();
+    }
+
+    @Inject(
+            method = "cleanUpAfterCrash",
+            at = @At("HEAD")
+    )
+    private void stopRunningOnCrash(CallbackInfo ci) {
+        Atum.stopRunning();
     }
 
     @Unique
@@ -115,12 +153,5 @@ public abstract class MinecraftClientMixin {
             }
         }
         return false;
-    }
-
-    @ModifyVariable(method = "startIntegratedServer(Ljava/lang/String;Lnet/minecraft/util/registry/RegistryTracker$Modifiable;Ljava/util/function/Function;Lcom/mojang/datafixers/util/Function4;ZLnet/minecraft/client/MinecraftClient$WorldLoadAction;)V", at = @At("STORE"))
-    private LevelLoadingScreen addSeedToLLS(LevelLoadingScreen levelLoadingScreen, @Local MinecraftClient.IntegratedResourceManager integratedResourceManager) {
-        Optional.ofNullable(((ISeedStringHolder) integratedResourceManager.getSaveProperties().getGeneratorOptions()).atum$getSeedString())
-                .ifPresent(seedString -> ((ISeedStringHolder) levelLoadingScreen).atum$setSeedString(seedString));
-        return levelLoadingScreen;
     }
 }

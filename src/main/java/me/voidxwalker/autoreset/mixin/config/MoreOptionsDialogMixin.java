@@ -14,10 +14,10 @@ import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.world.GeneratorType;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.Registry;
+import net.minecraft.util.registry.RegistryKey;
 import net.minecraft.util.registry.RegistryTracker;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.gen.GeneratorOptions;
-import net.minecraft.world.gen.chunk.ChunkGenerator;
 import net.minecraft.world.gen.chunk.FlatChunkGenerator;
 import net.minecraft.world.gen.chunk.FlatChunkGeneratorConfig;
 import org.spongepowered.asm.mixin.Mixin;
@@ -27,7 +27,6 @@ import java.util.Optional;
 
 @Mixin(MoreOptionsDialog.class)
 public abstract class MoreOptionsDialogMixin implements IMoreOptionsDialog {
-
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
     @Shadow
     private Optional<GeneratorType> generatorType;
@@ -106,24 +105,21 @@ public abstract class MoreOptionsDialogMixin implements IMoreOptionsDialog {
         String generatorDetails = "";
         switch (Atum.config.generatorType) {
             case FLAT:
-                ChunkGenerator chunkGenerator = this.generatorOptions.getChunkGenerator();
-                if (chunkGenerator instanceof FlatChunkGenerator) {
-                    generatorDetails = FlatChunkGeneratorConfig.CODEC.encode(
-                            ((FlatChunkGenerator) chunkGenerator).getGeneratorConfig(),
-                            JsonOps.INSTANCE,
-                            new JsonObject()
-                    ).resultOrPartial(
-                            error -> Atum.LOGGER.warn("Failed to serialize flat world generator details!")
-                    ).map(JsonElement::toString).orElse("");
-                }
+                generatorDetails = FlatChunkGeneratorConfig.CODEC.encode(
+                        ((FlatChunkGenerator) this.generatorOptions.getChunkGenerator()).getGeneratorConfig(),
+                        JsonOps.INSTANCE,
+                        new JsonObject()
+                ).resultOrPartial(
+                        error -> Atum.LOGGER.warn("Failed to serialize flat world generator details!")
+                ).map(JsonElement::toString).orElse("");
                 break;
             case SINGLE_BIOME_SURFACE:
             case SINGLE_BIOME_CAVES:
             case SINGLE_BIOME_FLOATING_ISLANDS:
-                Identifier biomeID = Registry.BIOME.getId(this.generatorOptions.getChunkGenerator().getBiomeSource().getBiomes().get(0));
-                if (biomeID != null) {
-                    generatorDetails = biomeID.toString();
-                }
+                generatorDetails = Registry.BIOME.getKey(this.generatorOptions.getChunkGenerator().getBiomeSource().getBiomes().get(0))
+                        .map(RegistryKey::getValue)
+                        .map(Identifier::toString)
+                        .orElse("");
         }
         Atum.config.generatorDetails = generatorDetails;
     }

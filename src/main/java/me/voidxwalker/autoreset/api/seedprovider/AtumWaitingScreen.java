@@ -2,6 +2,7 @@ package me.voidxwalker.autoreset.api.seedprovider;
 
 import me.voidxwalker.autoreset.Atum;
 import me.voidxwalker.autoreset.AtumCreateWorldScreen;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.text.Text;
 
@@ -20,8 +21,7 @@ public abstract class AtumWaitingScreen extends Screen {
     @SuppressWarnings("unused")
     protected final void continueWorldCreation() {
         this.onDecided();
-        assert this.client != null;
-        this.client.openScreen(new AtumCreateWorldScreen(null));
+        MinecraftClient.getInstance().openScreen(new AtumCreateWorldScreen(null));
     }
 
     private void onDecided() {

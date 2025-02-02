@@ -3,6 +3,7 @@ package me.voidxwalker.autoreset.mixin.gui;
 import me.voidxwalker.autoreset.Atum;
 import me.voidxwalker.autoreset.AtumCreateWorldScreen;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.DrawableHelper;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.TitleScreen;
 import net.minecraft.client.gui.widget.ButtonWidget;
@@ -26,25 +27,30 @@ public abstract class TitleScreenMixin extends Screen {
         super(title);
     }
 
-    @Inject(method = "init", at = @At("TAIL"))
+    @Inject(
+            method = "init",
+            at = @At("TAIL")
+    )
     private void init(CallbackInfo info) {
         if (Atum.isRunning()) {
             Atum.scheduleReset();
+            return;
         }
 
         this.addButton(new ButtonWidget(this.width / 2 - 124, this.height / 4 + 48, 20, 20, LiteralText.EMPTY, button -> {
-            if (!Screen.hasShiftDown()) {
-                Atum.scheduleReset();
-            } else {
+            if (Screen.hasShiftDown()) {
                 MinecraftClient.getInstance().openScreen(new AtumCreateWorldScreen(this));
+                return;
             }
+            Atum.scheduleReset();
         }) {
             @Override
             public void renderButton(MatrixStack matrices, int mouseX, int mouseY, float delta) {
                 super.renderButton(matrices, mouseX, mouseY, delta);
+
                 MinecraftClient.getInstance().getTextureManager().bindTexture(BUTTON_IMAGE);
-                drawTexture(matrices, this.x + 2, this.y + 2, 0.0F, 0.0F, 16, 16, 16, 16);
-                if (this.isHovered() && hasShiftDown()) {
+                DrawableHelper.drawTexture(matrices, this.x + 2, this.y + 2, 0.0F, 0.0F, 16, 16, 16, 16);
+                if (Screen.hasShiftDown() && this.isHovered()) {
                     this.drawCenteredText(matrices, TitleScreenMixin.this.textRenderer, new TranslatableText("atum.menu.open_config"), this.x + this.width / 2, this.y - 15, 16777215);
                 }
             }
