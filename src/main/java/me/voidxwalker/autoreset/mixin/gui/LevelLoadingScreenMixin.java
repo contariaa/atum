@@ -23,7 +23,7 @@ public abstract class LevelLoadingScreenMixin implements ISeedStringHolder {
             method = "render",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/client/gui/screen/LevelLoadingScreen;drawCenteredText(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/font/TextRenderer;Ljava/lang/String;III)V"
+                    target = "Lnet/minecraft/client/gui/screen/LevelLoadingScreen;drawCenteredTextWithShadow(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/font/TextRenderer;Ljava/lang/String;III)V"
             )
     )
     private void drawSeedString(MatrixStack matrices, TextRenderer textRenderer, String s, int x, int y, int color, Operation<Void> original) {
@@ -32,9 +32,9 @@ public abstract class LevelLoadingScreenMixin implements ISeedStringHolder {
             return;
         }
         if (Atum.inDemoMode()) {
-            DrawableHelper.drawCenteredText(matrices, textRenderer, "North Carolina", x, y - 20, color);
-        } else if (!this.seedString.isEmpty()) {
-            DrawableHelper.drawCenteredText(matrices, textRenderer, Atum.getSeedProvider().shouldShowSeed() ? this.seedString : "Set Seed", x, y - 20, color);
+            DrawableHelper.drawCenteredTextWithShadow(matrices, textRenderer, "North Carolina", x, y - 20, color);
+        } else if (this.seedString != null && !this.seedString.isEmpty()) {
+            DrawableHelper.drawCenteredTextWithShadow(matrices, textRenderer, Atum.getSeedProvider().shouldShowSeed() ? this.seedString : "Set Seed", x, y - 20, color);
         }
     }
 

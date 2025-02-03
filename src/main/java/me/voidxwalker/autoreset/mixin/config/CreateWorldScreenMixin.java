@@ -1,42 +1,55 @@
 package me.voidxwalker.autoreset.mixin.config;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
+import com.mojang.serialization.JsonOps;
+import me.contaria.speedrunapi.util.IdentifierUtil;
 import me.contaria.speedrunapi.util.TextUtil;
 import me.voidxwalker.autoreset.AttemptTracker;
 import me.voidxwalker.autoreset.Atum;
+import me.voidxwalker.autoreset.AtumConfig;
 import me.voidxwalker.autoreset.AtumCreateWorldScreen;
 import me.voidxwalker.autoreset.api.seedprovider.SeedProvider;
-import me.voidxwalker.autoreset.interfaces.IMoreOptionsDialog;
+import me.voidxwalker.autoreset.interfaces.ISeedStringHolder;
+import me.voidxwalker.autoreset.mixin.access.LevelScreenProviderAccessor;
+import me.voidxwalker.autoreset.mixin.access.LevelScreenProviderAccessor2;
+import me.voidxwalker.autoreset.mixin.access.WorldCreatorAccessor;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.Drawable;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.Selectable;
 import net.minecraft.client.gui.screen.ConfirmScreen;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.ScreenTexts;
 import net.minecraft.client.gui.screen.world.CreateWorldScreen;
-import net.minecraft.client.gui.screen.world.MoreOptionsDialog;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.gui.widget.ClickableWidget;
+import net.minecraft.client.gui.screen.world.WorldCreator;
+import net.minecraft.client.gui.widget.CyclingButtonWidget;
+import net.minecraft.client.gui.widget.GridWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.resource.DataPackSettings;
+import net.minecraft.client.gui.widget.Widget;
+import net.minecraft.client.world.GeneratorOptionsHolder;
+import net.minecraft.registry.Registry;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.RegistryKeys;
+import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.resource.DataConfiguration;
+import net.minecraft.screen.ScreenTexts;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.text.Text;
-import net.minecraft.util.registry.DynamicRegistryManager;
-import net.minecraft.world.Difficulty;
-import net.minecraft.world.GameRules;
+import net.minecraft.util.Identifier;
+import net.minecraft.util.JsonHelper;
+import net.minecraft.world.biome.Biome;
 import net.minecraft.world.gen.GeneratorOptions;
+import net.minecraft.world.gen.WorldPresets;
+import net.minecraft.world.gen.chunk.FlatChunkGenerator;
+import net.minecraft.world.gen.chunk.FlatChunkGeneratorConfig;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.Slice;
+import org.spongepowered.asm.mixin.injection.*;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.nio.file.Files;
@@ -45,6 +58,7 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 @Mixin(CreateWorldScreen.class)
@@ -54,42 +68,18 @@ public abstract class CreateWorldScreenMixin extends Screen {
     private Screen parent;
 
     @Shadow
-    private Difficulty currentDifficulty;
-    @Shadow
-    private CreateWorldScreen.Mode currentMode;
-    @Shadow
-    private boolean cheatsEnabled;
-    @Shadow
-    private boolean tweakedCheats;
-    @Shadow
-    private GameRules gameRules;
-    @Shadow
-    protected DataPackSettings dataPackSettings;
-    @Shadow
-    private @Nullable Path dataPackTempDir;
-
-    @Shadow
     @Final
-    public MoreOptionsDialog moreOptionsDialog;
-    @Shadow
-    private boolean moreOptionsOpen;
-    @Shadow
-    private TextFieldWidget levelNameField;
-    @Shadow
-    private ButtonWidget createLevelButton;
-    @Shadow
-    private ButtonWidget dataPacksButton;
-
-    @Unique
-    private ClickableWidget demoModeButton;
+    WorldCreator worldCreator;
 
     @Shadow
-    protected abstract void updateSaveFolderName();
+    @Nullable
+    private Path dataPackTempDir;
 
     @Shadow
     protected abstract void createLevel();
 
-    @Shadow protected abstract <T extends Element & Drawable & Selectable> T addDrawableChild(T drawableElement);
+    @Shadow
+    protected abstract <T extends Element & Drawable & Selectable> T addDrawableChild(T drawableElement);
 
     protected CreateWorldScreenMixin(Text title) {
         super(title);
@@ -108,20 +98,42 @@ public abstract class CreateWorldScreenMixin extends Screen {
         this.initDataPacks();
     }
 
+    @ModifyArg(
+            method = "init",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/client/gui/widget/ButtonWidget;builder(Lnet/minecraft/text/Text;Lnet/minecraft/client/gui/widget/ButtonWidget$PressAction;)Lnet/minecraft/client/gui/widget/ButtonWidget$Builder;",
+                    ordinal = 0
+            ),
+            slice = @Slice(
+                    from = @At(
+                            value = "CONSTANT",
+                            args = "stringValue=selectWorld.create"
+                    )
+            ),
+            index = 0
+    )
+    private Text replaceCreateNewWorldMessage(Text message) {
+        if (this.isAtum()) {
+            return ScreenTexts.DONE;
+        }
+        return message;
+    }
+
     @WrapWithCondition(
             method = "init",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/client/gui/screen/world/CreateWorldScreen;addDrawableChild(Lnet/minecraft/client/gui/Element;)Lnet/minecraft/client/gui/Element;"
+                    target = "Lnet/minecraft/client/gui/widget/GridWidget$Adder;add(Lnet/minecraft/client/gui/widget/Widget;)Lnet/minecraft/client/gui/widget/Widget;"
             ),
             slice = @Slice(
                     from = @At(
                             value = "FIELD",
-                            target = "Lnet/minecraft/client/gui/screen/ScreenTexts;CANCEL:Lnet/minecraft/text/Text;"
+                            target = "Lnet/minecraft/screen/ScreenTexts;CANCEL:Lnet/minecraft/text/Text;"
                     )
             )
     )
-    private boolean removeCancelButton(CreateWorldScreen instance, Element drawableElement) {
+    private boolean removeCancelButton(GridWidget.Adder adder, Widget widget) {
         return !this.isAtum();
     }
 
@@ -134,33 +146,17 @@ public abstract class CreateWorldScreenMixin extends Screen {
             return;
         }
 
-        String seed = this.getSeed();
-        if (seed == null) {
-            return;
-        }
-        ((IMoreOptionsDialog) this.moreOptionsDialog).atum$setSeed(seed);
-
         if (Atum.isRunning()) {
+            String seed = this.getSeed();
+            if (seed == null) {
+                return;
+            }
+
             this.createWorld(seed);
             return;
         }
 
         this.initConfigScreen();
-    }
-
-    @Inject(
-            method = "setMoreOptionsOpen(Z)V",
-            at = @At("TAIL")
-    )
-    private void updateLevelNameField(boolean moreOptionsOpen, CallbackInfo ci) {
-        if (!Atum.isRunning() && this.isAtum()) {
-            this.levelNameField.setText(Atum.config.attemptTracker.getWorldName(
-                    ((IMoreOptionsDialog) this.moreOptionsDialog).atum$isSetSeed() ? AttemptTracker.Type.SSG : AttemptTracker.Type.RSG
-            ));
-            if (this.demoModeButton != null) {
-                this.demoModeButton.visible = moreOptionsOpen;
-            }
-        }
     }
 
     @Inject(
@@ -177,36 +173,6 @@ public abstract class CreateWorldScreenMixin extends Screen {
         this.closeConfigScreen();
 
         ci.cancel();
-    }
-
-    @WrapWithCondition(
-            method = "init",
-            at = @At(
-                    value = "INVOKE",
-                    target = "Lnet/minecraft/client/gui/screen/world/CreateWorldScreen;updateSaveFolderName()V"
-            )
-    )
-    private boolean doNotUpdateEmptySaveFolderName(CreateWorldScreen screen) {
-        // micro-optimization, we call updateSaveFolderName ourselves when creating the level
-        return !Atum.isRunning();
-    }
-
-    @WrapWithCondition(
-            method = "render",
-            at = @At(
-                    value = "INVOKE",
-                    target = "Lnet/minecraft/client/gui/screen/world/CreateWorldScreen;drawTextWithShadow(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/font/TextRenderer;Lnet/minecraft/text/Text;III)V",
-                    ordinal = 0
-            ),
-            slice = @Slice(
-                    from = @At(
-                            value = "FIELD",
-                            target = "Lnet/minecraft/client/gui/screen/world/CreateWorldScreen;RESULT_FOLDER_TEXT:Lnet/minecraft/text/Text;"
-                    )
-            )
-    )
-    private boolean doNotShowResultFolderOnConfigScreen(MatrixStack matrices, TextRenderer textRenderer, Text text, int x, int y, int color) {
-        return !this.isAtum();
     }
 
     @ModifyExpressionValue(
@@ -253,16 +219,56 @@ public abstract class CreateWorldScreenMixin extends Screen {
 
     @Unique
     private void load() {
-        this.currentMode = Atum.config.gameMode;
-        this.currentDifficulty = Atum.config.difficulty;
-        this.cheatsEnabled = Atum.config.cheatsEnabled;
-        this.tweakedCheats = true;
-        if (Atum.config.hasModifiedGameRules()) {
-            this.gameRules.setAllValues(Atum.config.gameRules, null);
-        }
-        this.dataPackSettings = new DataPackSettings(Atum.config.dataPackSettings.getEnabled(), Atum.config.dataPackSettings.getDisabled());
+        this.worldCreator.setSeed(Atum.config.seed);
+        this.worldCreator.setGameMode(Atum.config.gameMode);
+        this.worldCreator.setDifficulty(Atum.config.difficulty);
+        this.worldCreator.setCheatsEnabled(Atum.config.cheatsEnabled);
+        this.worldCreator.setGenerateStructures(Atum.config.structures);
+        this.worldCreator.setBonusChestEnabled(Atum.config.bonusChest);
 
-        ((IMoreOptionsDialog) this.moreOptionsDialog).atum$loadAtumConfigurations();
+        this.worldCreator.setWorldType(Atum.config.generatorType.get(this.worldCreator.getGeneratorOptionsHolder().getCombinedRegistryManager().get(RegistryKeys.WORLD_PRESET)));
+        this.loadGeneratorDetails(Atum.config.generatorType, Atum.config.generatorDetails);
+
+        if (Atum.config.hasModifiedGameRules()) {
+            this.worldCreator.getGameRules().setAllValues(Atum.config.gameRules, null);
+        }
+        this.worldCreator.setGeneratorOptionsHolder(new GeneratorOptionsHolder(
+                this.worldCreator.getGeneratorOptionsHolder().generatorOptions(),
+                this.worldCreator.getGeneratorOptionsHolder().dimensionOptionsRegistry(),
+                this.worldCreator.getGeneratorOptionsHolder().selectedDimensions(),
+                this.worldCreator.getGeneratorOptionsHolder().combinedDynamicRegistries(),
+                this.worldCreator.getGeneratorOptionsHolder().dataPackContents(),
+                new DataConfiguration(Atum.config.dataPackSettings, Atum.config.featureSet)
+        ));
+    }
+
+    @Unique
+    private void loadGeneratorDetails(AtumConfig.AtumWorldType type, String generatorDetails) {
+        if (type == null || generatorDetails.isEmpty()) {
+            return;
+        }
+        switch (type) {
+            case FLAT -> {
+                FlatChunkGeneratorConfig.CODEC.parse(
+                        // TODO: This always fails with "Not a registry ops"
+                        //       RegistryOps.of(JsonOps.INSTANCE, ?, this.registryManager)
+                        JsonOps.INSTANCE,
+                        JsonHelper.deserialize(generatorDetails)
+                ).resultOrPartial(
+                        error -> Atum.LOGGER.warn("Failed to deserialize flat world generator details! {}", error)
+                ).ifPresent(generatorConfig -> this.worldCreator.applyModifier(LevelScreenProviderAccessor.atum$createFlatModifier(generatorConfig)));
+            }
+            case SINGLE_BIOME_SURFACE -> {
+                Registry<Biome> registry = this.worldCreator.getGeneratorOptionsHolder().getCombinedRegistryManager().get(RegistryKeys.BIOME);
+                Identifier id = IdentifierUtil.parse(generatorDetails);
+                Optional<RegistryEntry<Biome>> biome = registry.getOrEmpty(id).flatMap(registry::getKey).map(registry::entryOf);
+                if (biome.isPresent()) {
+                    this.worldCreator.applyModifier(LevelScreenProviderAccessor2.atum$createSingleBiomeModifier(biome.get()));
+                } else {
+                    Atum.LOGGER.warn("Failed to parse biome: {}", id);
+                }
+            }
+        }
     }
 
     @Unique
@@ -272,7 +278,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
             return;
         }
 
-        if (Atum.config.isDefaultDataPackSettings(this.dataPackSettings)) {
+        if (Atum.config.isDefaultDataPackSettings(this.worldCreator.getGeneratorOptionsHolder().dataConfiguration().dataPacks())) {
             return;
         }
 
@@ -313,55 +319,75 @@ public abstract class CreateWorldScreenMixin extends Screen {
         if (Atum.inDemoMode()) {
             String demoWorldName = Atum.config.attemptTracker.incrementAndGetWorldName(AttemptTracker.Type.DEMO);
             Atum.LOGGER.info("Creating \"{}\" with demo seed...", demoWorldName);
-            DynamicRegistryManager registryManager = DynamicRegistryManager.BUILTIN.get();
-            MinecraftClient.getInstance().createWorld(demoWorldName, MinecraftServer.DEMO_LEVEL_INFO, registryManager, GeneratorOptions.createDemo(registryManager));
+            MinecraftClient.getInstance().createIntegratedServerLoader().createAndStart(demoWorldName, MinecraftServer.DEMO_LEVEL_INFO, GeneratorOptions.DEMO_OPTIONS, WorldPresets::createDemoOptions);
             return;
         }
 
-        // micro optimization, vanilla calls the changed listener twice,
-        // once on setText and once on setCursorToEnd
-        this.levelNameField.setChangedListener(string -> {});
-        this.levelNameField.setText(
-                Atum.config.attemptTracker.incrementAndGetWorldName(seed.isEmpty() ? AttemptTracker.Type.RSG : AttemptTracker.Type.SSG)
-        );
-        this.updateSaveFolderName();
+        this.worldCreator.setSeed(seed);
+        ((ISeedStringHolder) this.worldCreator.getGeneratorOptionsHolder().generatorOptions()).atum$setSeedString(seed);
 
         if (!seed.isEmpty() && Atum.getSeedProvider().shouldShowSeed()) {
-            Atum.LOGGER.info("Creating \"{}\" with seed \"{}\"...", this.levelNameField.getText(), seed);
+            Atum.LOGGER.info("Creating \"{}\" with seed \"{}\"...", this.worldCreator.getWorldName(), seed);
         } else {
-            Atum.LOGGER.info("Creating \"{}\"...", this.levelNameField.getText());
+            Atum.LOGGER.info("Creating \"{}\"...", this.worldCreator.getWorldName());
         }
         this.createLevel();
     }
 
     @Unique
     private void initConfigScreen() {
-        this.levelNameField.setText(Atum.config.attemptTracker.getWorldName(
-                ((IMoreOptionsDialog) this.moreOptionsDialog).atum$isSetSeed() ? AttemptTracker.Type.SSG : AttemptTracker.Type.RSG
+        this.worldCreator.setWorldName(Atum.config.attemptTracker.getWorldName(
+                this.worldCreator.getSeed().isEmpty() ? AttemptTracker.Type.SSG : AttemptTracker.Type.RSG
         ));
-        this.levelNameField.setEditable(false);
-        this.levelNameField.setFocusUnlocked(false);
-        this.levelNameField.active = false;
-
-        this.dataPacksButton.active = this.dataPackTempDir != null;
-        this.createLevelButton.setMessage(TextUtil.translatable("gui.done"));
-        this.demoModeButton = this.addDrawableChild(new ButtonWidget(
-                this.width / 2 + 5, 151, 150, 20,
-                TextUtil.translatable("atum.config.demoMode", ScreenTexts.onOrOff(Atum.config.demoMode)),
-                button -> button.setMessage(TextUtil.translatable("atum.config.demoMode", ScreenTexts.onOrOff(Atum.config.demoMode = !Atum.config.demoMode)))
-        ));
-        this.demoModeButton.visible = this.moreOptionsOpen;
+        this.worldCreator.addListener(
+                worldCreator -> {
+                    String worldName = Atum.config.attemptTracker.getWorldName(
+                            worldCreator.getSeed().isEmpty() ? AttemptTracker.Type.SSG : AttemptTracker.Type.RSG
+                    );
+                    if (!worldName.equals(worldCreator.getWorldName())) {
+                        worldCreator.setWorldName(worldName);
+                    }
+                }
+        );
     }
 
     @Unique
     private void save() {
-        Atum.config.gameMode = this.currentMode;
-        Atum.config.difficulty = this.currentDifficulty;
-        Atum.config.cheatsEnabled = this.cheatsEnabled;
-        Atum.config.setGameRules(this.gameRules.copy());
-        Atum.config.setDataPackSettings(this.dataPackSettings);
+        Atum.config.gameMode = ((WorldCreatorAccessor) this.worldCreator).atum$getGameMode();
+        Atum.config.difficulty = ((WorldCreatorAccessor) this.worldCreator).atum$getDifficulty();
+        Atum.config.cheatsEnabled = ((WorldCreatorAccessor) this.worldCreator).atum$getCheatsEnabled();
+        Atum.config.structures = ((WorldCreatorAccessor) this.worldCreator).atum$shouldGenerateStructures();
+        Atum.config.bonusChest = ((WorldCreatorAccessor) this.worldCreator).atum$isBonusChestEnabled();
 
-        ((IMoreOptionsDialog) this.moreOptionsDialog).atum$saveAtumConfigurations();
+        Atum.config.generatorType = AtumConfig.AtumWorldType.from(this.worldCreator.getWorldType());
+        Atum.config.generatorDetails = this.saveGeneratorDetails(Atum.config.generatorType);
+
+        Atum.config.setGameRules(this.worldCreator.getGameRules().copy());
+        Atum.config.setDataPackSettings(this.worldCreator.getGeneratorOptionsHolder().dataConfiguration().dataPacks());
+        Atum.config.featureSet = this.worldCreator.getGeneratorOptionsHolder().dataConfiguration().enabledFeatures();
+    }
+
+    @Unique
+    private String saveGeneratorDetails(AtumConfig.AtumWorldType type) {
+        if (type == null) {
+            return "";
+        }
+        return switch (type) {
+            case FLAT -> // TODO: This now also fails with "Can't access registry"
+                    FlatChunkGeneratorConfig.CODEC.encode(
+                            ((FlatChunkGenerator) this.worldCreator.getGeneratorOptionsHolder().selectedDimensions().getChunkGenerator()).getConfig(),
+                            JsonOps.INSTANCE,
+                            new JsonObject()
+                    ).resultOrPartial(
+                            error -> Atum.LOGGER.warn("Failed to serialize flat world generator details! {}", error)
+                    ).map(JsonElement::toString).orElse("");
+            case SINGLE_BIOME_SURFACE ->
+                    this.worldCreator.getGeneratorOptionsHolder().selectedDimensions().getChunkGenerator().getBiomeSource().getBiomes().iterator().next().getKey()
+                            .map(RegistryKey::getValue)
+                            .map(Identifier::toString)
+                            .orElse("");
+            default -> "";
+        };
     }
 
     @Unique
@@ -383,5 +409,63 @@ public abstract class CreateWorldScreenMixin extends Screen {
     @Unique
     private boolean isAtum() {
         return (Object) this instanceof AtumCreateWorldScreen;
+    }
+
+    @Mixin(targets = "net/minecraft/client/gui/screen/world/CreateWorldScreen$GameTab")
+    public static class GameTabMixin {
+        @Shadow
+        @Final
+        private TextFieldWidget worldNameField;
+
+        @WrapWithCondition(
+                method = "<init>",
+                at = @At(
+                        value = "INVOKE",
+                        target = "Lnet/minecraft/client/gui/screen/world/WorldCreator;addListener(Ljava/util/function/Consumer;)V",
+                        ordinal = 0
+                )
+        )
+        private boolean deactivateWorldNameFieldTooltip(WorldCreator worldCreator, Consumer<WorldCreator> listener, CreateWorldScreen createWorldScreen) {
+            return !(createWorldScreen instanceof AtumCreateWorldScreen);
+        }
+
+        @WrapWithCondition(
+                method = "<init>",
+                at = @At(
+                        value = "INVOKE",
+                        target = "Lnet/minecraft/client/gui/screen/world/CreateWorldScreen;method_48647(Lnet/minecraft/client/gui/screen/world/CreateWorldScreen;Lnet/minecraft/client/gui/Element;)V"
+                )
+        )
+        private boolean deactivateWorldNameFieldInitialFocus(CreateWorldScreen createWorldScreen, Element element) {
+            return !(createWorldScreen instanceof AtumCreateWorldScreen);
+        }
+
+        @ModifyVariable(
+                method = "<init>",
+                at = @At(
+                        value = "INVOKE",
+                        target = "Lnet/minecraft/client/gui/widget/GridWidget$Adder;add(Lnet/minecraft/client/gui/widget/Widget;)Lnet/minecraft/client/gui/widget/Widget;",
+                        shift = At.Shift.AFTER
+                ),
+                ordinal = 0
+        )
+        private GridWidget.Adder addDemoModeButton(GridWidget.Adder adder, CreateWorldScreen createWorldScreen) {
+            if (createWorldScreen instanceof AtumCreateWorldScreen) {
+                adder.add(CyclingButtonWidget.onOffBuilder().build(0, 0, 210, 20, TextUtil.translatable("atum.config.demoMode"), (button, value) -> Atum.config.demoMode = value));
+            }
+            return adder;
+        }
+
+        @Inject(
+                method = "<init>",
+                at = @At("TAIL")
+        )
+        private void deactivateWorldNameField(CreateWorldScreen createWorldScreen, CallbackInfo ci) {
+            if (createWorldScreen instanceof AtumCreateWorldScreen) {
+                this.worldNameField.setEditable(false);
+                this.worldNameField.setFocusUnlocked(false);
+                this.worldNameField.active = false;
+            }
+        }
     }
 }

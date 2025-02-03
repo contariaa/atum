@@ -9,22 +9,27 @@ import me.contaria.speedrunapi.config.SpeedrunConfigContainer;
 import me.contaria.speedrunapi.config.api.SpeedrunConfig;
 import me.contaria.speedrunapi.config.api.SpeedrunOption;
 import me.contaria.speedrunapi.config.api.annotations.Config;
+import me.contaria.speedrunapi.util.IdentifierUtil;
 import me.contaria.speedrunapi.util.TextUtil;
 import me.voidxwalker.autoreset.interfaces.ISeedStringHolder;
-import me.voidxwalker.autoreset.mixin.access.CreateWorldScreen$ModeAccessor;
-import me.voidxwalker.autoreset.mixin.access.GeneratorTypeAccessor;
 import me.voidxwalker.autoreset.mixin.access.RuleAccessor;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.ScreenTexts;
-import net.minecraft.client.gui.screen.world.CreateWorldScreen;
-import net.minecraft.client.world.GeneratorType;
+import net.minecraft.client.gui.screen.world.WorldCreator;
+import net.minecraft.registry.Registry;
+import net.minecraft.registry.RegistryKey;
 import net.minecraft.resource.DataPackSettings;
+import net.minecraft.resource.featuretoggle.FeatureFlags;
+import net.minecraft.resource.featuretoggle.FeatureSet;
+import net.minecraft.screen.ScreenTexts;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.GameRules;
+import net.minecraft.world.gen.WorldPreset;
+import net.minecraft.world.gen.WorldPresets;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.NotNull;
@@ -34,17 +39,14 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class AtumConfig implements SpeedrunConfig {
     @Config.Ignored
     private SpeedrunConfigContainer<?> container;
 
-    public CreateWorldScreen.Mode gameMode = CreateWorldScreen.Mode.SURVIVAL;
+    public WorldCreator.Mode gameMode = WorldCreator.Mode.SURVIVAL;
     public boolean structures = true;
     // renamed from difficulty to worldDifficulty in 2.1
     // 2.0 set the default to NORMAL, causing people to play on normal instead of easy because they weren't used to it
@@ -53,12 +55,13 @@ public class AtumConfig implements SpeedrunConfig {
     public String seed = "";
     public boolean bonusChest = false;
     public boolean cheatsEnabled;
-    public AtumGeneratorType generatorType = AtumGeneratorType.DEFAULT;
+    public AtumWorldType generatorType = AtumWorldType.DEFAULT;
     public String generatorDetails = "";
     @Config.Access(setter = "setGameRules")
     public GameRules gameRules = new GameRules();
     @Config.Access(setter = "setDataPackSettings")
     public DataPackSettings dataPackSettings = DataPackSettings.SAFE_MODE;
+    public FeatureSet featureSet = FeatureFlags.DEFAULT_ENABLED_FEATURES;
 
     public boolean demoMode;
 
@@ -221,6 +224,62 @@ public class AtumConfig implements SpeedrunConfig {
         return dataPacks;
     }
 
+    public JsonElement serializeFeatureSet(FeatureSet featureSet) {
+        JsonObject jsonObject = new JsonObject();
+        JsonArray enabled = new JsonArray();
+        JsonArray disabled = new JsonArray();
+
+        Set<Identifier> defaultFeatures = FeatureFlags.FEATURE_MANAGER.toId(FeatureFlags.DEFAULT_ENABLED_FEATURES);
+        Set<Identifier> features = FeatureFlags.FEATURE_MANAGER.toId(featureSet);
+        for (Identifier feature : FeatureFlags.FEATURE_MANAGER.toId(FeatureFlags.FEATURE_MANAGER.getFeatureSet())) {
+            if (features.contains(feature)) {
+                if (!defaultFeatures.contains(feature)) {
+                    enabled.add(new JsonPrimitive(feature.toString()));
+                }
+            } else if (defaultFeatures.contains(feature)) {
+                disabled.add(new JsonPrimitive(feature.toString()));
+            }
+        }
+        if (!enabled.isEmpty()) {
+            jsonObject.add("enabled", enabled);
+        }
+        if (!disabled.isEmpty()) {
+            jsonObject.add("disabled", disabled);
+        }
+
+        return jsonObject;
+    }
+
+    public FeatureSet deserializeFeatureSet(JsonElement jsonElement) {
+        JsonObject jsonObject = jsonElement.getAsJsonObject();
+
+        JsonArray enabled = jsonObject.getAsJsonArray("enabled");
+        Set<Identifier> enabledFeatures = new HashSet<>();
+        if (enabled != null) {
+            for (JsonElement element : enabled) {
+                enabledFeatures.add(IdentifierUtil.parse(element.getAsString()));
+            }
+        }
+
+        JsonArray disabled = jsonObject.getAsJsonArray("disabled");
+        Set<Identifier> disabledFeatures = new HashSet<>();
+        if (disabled != null) {
+            for (JsonElement element : disabled) {
+                disabledFeatures.add(IdentifierUtil.parse(element.getAsString()));
+            }
+        }
+
+        Set<Identifier> defaultFeatures = FeatureFlags.FEATURE_MANAGER.toId(FeatureFlags.DEFAULT_ENABLED_FEATURES);
+        Set<Identifier> features = new HashSet<>();
+        for (Identifier feature : FeatureFlags.FEATURE_MANAGER.toId(FeatureFlags.FEATURE_MANAGER.getFeatureSet())) {
+            if (enabledFeatures.contains(feature) || (defaultFeatures.contains(feature) && !disabledFeatures.contains(feature))) {
+                features.add(feature);
+            }
+        }
+
+        return FeatureFlags.FEATURE_MANAGER.featureSetOf(features);
+    }
+
     public void save() {
         try {
             this.container.save();
@@ -244,15 +303,21 @@ public class AtumConfig implements SpeedrunConfig {
                     .toJson(((option, config_, configStorage, optionField) -> this.serializeDataPackSettings(option.get())))
                     .build();
         }
+        if (FeatureSet.class.equals(type)) {
+            return new SpeedrunConfigAPI.CustomOption.Builder<FeatureSet>(config, this, field, idPrefix)
+                    .fromJson(((option, config_, configStorage, optionField, jsonElement) -> option.set(this.deserializeFeatureSet(jsonElement))))
+                    .toJson(((option, config_, configStorage, optionField) -> this.serializeFeatureSet(option.get())))
+                    .build();
+        }
         return SpeedrunConfig.super.parseField(field, config, idPrefix);
     }
 
     public boolean updateHasLegalSettings() {
-        return this.hasLegalSettings = (this.gameMode == CreateWorldScreen.Mode.SURVIVAL || this.gameMode == CreateWorldScreen.Mode.HARDCORE) &&
+        return this.hasLegalSettings = (this.gameMode == WorldCreator.Mode.SURVIVAL || this.gameMode == WorldCreator.Mode.HARDCORE) &&
                 this.structures &&
                 !this.bonusChest &&
                 !this.cheatsEnabled &&
-                this.generatorType == AtumGeneratorType.DEFAULT &&
+                this.generatorType == AtumWorldType.DEFAULT &&
                 !this.areGameRulesModified(this.gameRules) &&
                 this.isDefaultDataPackSettings(this.dataPackSettings) &&
                 !this.demoMode;
@@ -263,7 +328,7 @@ public class AtumConfig implements SpeedrunConfig {
         if (warnings.isEmpty()) {
             return TextUtil.translatable("gui.none");
         }
-        MutableText warning = warnings.remove(0).shallowCopy();
+        MutableText warning = warnings.remove(0).copyContentOnly();
         for (Text w : warnings) {
             warning.append(", ").append(w);
         }
@@ -272,20 +337,20 @@ public class AtumConfig implements SpeedrunConfig {
 
     private List<Text> getIllegalSettingsTexts() {
         List<Text> texts = new ArrayList<>();
-        if (this.gameMode != CreateWorldScreen.Mode.SURVIVAL && this.gameMode != CreateWorldScreen.Mode.HARDCORE) {
-            texts.add(TextUtil.translatable("selectWorld.gameMode").append(": ").append(TextUtil.translatable("selectWorld.gameMode." + ((CreateWorldScreen$ModeAccessor) (Object) this.gameMode).atum$getTranslationSuffix())));
+        if (this.gameMode != WorldCreator.Mode.SURVIVAL && this.gameMode != WorldCreator.Mode.HARDCORE) {
+            texts.add(TextUtil.translatable("selectWorld.gameMode").append(": ").append(this.gameMode.name));
         }
         if (this.cheatsEnabled) {
-            texts.add(TextUtil.translatable("selectWorld.allowCommands").append(" ").append(ScreenTexts.ON));
+            texts.add(TextUtil.translatable("selectWorld.allowCommands").append(": ").append(ScreenTexts.ON));
         }
         if (!this.structures) {
-            texts.add(TextUtil.translatable("selectWorld.mapFeatures").append(" ").append(ScreenTexts.OFF));
+            texts.add(TextUtil.translatable("selectWorld.mapFeatures").append(": ").append(ScreenTexts.OFF));
         }
         if (this.bonusChest) {
-            texts.add(TextUtil.translatable("selectWorld.bonusItems").append(" ").append(ScreenTexts.ON));
+            texts.add(TextUtil.translatable("selectWorld.bonusItems").append(": ").append(ScreenTexts.ON));
         }
-        if (this.generatorType != AtumGeneratorType.DEFAULT) {
-            texts.add(TextUtil.translatable("selectWorld.mapType").append(" ").append(this.generatorType.get().getDisplayName()));
+        if (this.generatorType != AtumWorldType.DEFAULT) {
+            texts.add(TextUtil.translatable("selectWorld.mapType").append(": ").append(TextUtil.translatable(this.generatorType.worldPreset.getValue().toTranslationKey("generator"))));
         }
         if (this.modifiedGameRules) {
             texts.add(TextUtil.translatable("selectWorld.gameRules").append(": Modified"));
@@ -299,20 +364,23 @@ public class AtumConfig implements SpeedrunConfig {
             }
             texts.add(TextUtil.translatable("selectWorld.dataPacks").append(": " + dataPackInformation));
         }
+        if (!this.featureSet.equals(FeatureFlags.DEFAULT_ENABLED_FEATURES)) {
+            texts.add(TextUtil.translatable("selectWorld.experiments").append(": Modified"));
+        }
         if (this.demoMode) {
-            texts.add(TextUtil.translatable("atum.config.demoMode", ScreenTexts.ON));
+            texts.add(TextUtil.translatable("atum.config.demoMode").append(": ").append(ScreenTexts.ON));
         }
         return texts;
     }
 
     public void resetToLegalSettings() {
-        if (this.gameMode != CreateWorldScreen.Mode.HARDCORE) {
-            this.gameMode = CreateWorldScreen.Mode.SURVIVAL;
+        if (this.gameMode != WorldCreator.Mode.HARDCORE) {
+            this.gameMode = WorldCreator.Mode.SURVIVAL;
         }
         this.structures = true;
         this.bonusChest = false;
         this.cheatsEnabled = false;
-        this.generatorType = AtumGeneratorType.DEFAULT;
+        this.generatorType = AtumWorldType.DEFAULT;
         this.generatorDetails = "";
         this.setGameRules(new GameRules());
         if (Files.exists(this.dataPackDirectory)) {
@@ -323,6 +391,7 @@ public class AtumConfig implements SpeedrunConfig {
             }
         }
         this.setDataPackSettings(DataPackSettings.SAFE_MODE);
+        this.featureSet = FeatureFlags.DEFAULT_ENABLED_FEATURES;
         this.demoMode = false;
     }
 
@@ -350,7 +419,7 @@ public class AtumConfig implements SpeedrunConfig {
                 seedLine = "Resetting a random seed";
             }
             seedLine += ", ";
-            if (Atum.config.gameMode == CreateWorldScreen.Mode.HARDCORE) {
+            if (Atum.config.gameMode == WorldCreator.Mode.HARDCORE) {
                 seedLine += "hc";
             } else {
                 seedLine += Atum.config.difficulty.getName().charAt(0);
@@ -413,28 +482,28 @@ public class AtumConfig implements SpeedrunConfig {
     }
 
     @SuppressWarnings("unused")
-    public enum AtumGeneratorType {
-        DEFAULT(GeneratorTypeAccessor.atum$DEFAULT()),
-        FLAT(GeneratorTypeAccessor.atum$FLAT()),
-        LARGE_BIOMES(GeneratorTypeAccessor.atum$LARGE_BIOMES()),
-        AMPLIFIED(GeneratorTypeAccessor.atum$AMPLIFIED()),
-        SINGLE_BIOME_SURFACE(GeneratorTypeAccessor.atum$SINGLE_BIOME_SURFACE()),
-        DEBUG(GeneratorTypeAccessor.atum$DEBUG_ALL_BLOCK_STATES());
+    public enum AtumWorldType {
+        DEFAULT(WorldPresets.DEFAULT),
+        FLAT(WorldPresets.FLAT),
+        LARGE_BIOMES(WorldPresets.LARGE_BIOMES),
+        AMPLIFIED(WorldPresets.AMPLIFIED),
+        SINGLE_BIOME_SURFACE(WorldPresets.SINGLE_BIOME_SURFACE),
+        DEBUG(WorldPresets.DEBUG_ALL_BLOCK_STATES);
 
-        private final GeneratorType generatorType;
+        private final RegistryKey<WorldPreset> worldPreset;
 
-        AtumGeneratorType(GeneratorType generatorType) {
-            this.generatorType = generatorType;
+        AtumWorldType(RegistryKey<WorldPreset> worldPreset) {
+            this.worldPreset = worldPreset;
         }
 
-        public GeneratorType get() {
-            return this.generatorType;
+        public WorldCreator.WorldType get(Registry<WorldPreset> registry) {
+            return new WorldCreator.WorldType(registry.getEntry(this.worldPreset).orElseThrow());
         }
 
-        public static @Nullable AtumGeneratorType from(GeneratorType generatorType) {
-            for (AtumGeneratorType atumGeneratorType : values()) {
-                if (atumGeneratorType.get() == generatorType) {
-                    return atumGeneratorType;
+        public static @Nullable AtumWorldType from(WorldCreator.WorldType worldType) {
+            for (AtumWorldType type : values()) {
+                if (Objects.requireNonNull(worldType.preset()).matchesKey(type.worldPreset)) {
+                    return type;
                 }
             }
             return null;

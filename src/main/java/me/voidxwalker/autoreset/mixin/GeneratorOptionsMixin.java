@@ -17,10 +17,9 @@ public abstract class GeneratorOptionsMixin implements ISeedStringHolder {
 
     @ModifyReturnValue(
             method = {
-                    "withHardcore",
                     "withBonusChest",
-                    "toggleBonusChest",
-                    "toggleGenerateStructures"
+                    "withStructures",
+                    "withSeed"
             },
             at = @At("RETURN")
     )

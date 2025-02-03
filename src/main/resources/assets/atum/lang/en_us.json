@@ -8,5 +8,5 @@
   "atum.menu.legal_settings.confirm": "Confirm",
   "atum.menu.legal_settings.reset": "Reset Settings",
 
-  "atum.config.demoMode": "Demo Mode: %s"
+  "atum.config.demoMode": "Demo Mode"
 }

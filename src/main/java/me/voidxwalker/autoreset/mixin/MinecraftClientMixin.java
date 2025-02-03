@@ -11,11 +11,9 @@ import net.minecraft.client.gui.screen.*;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.option.GameOptions;
 import net.minecraft.client.world.ClientWorld;
+import net.minecraft.server.SaveLoader;
 import net.minecraft.text.Text;
-import net.minecraft.text.TranslatableText;
 import net.minecraft.util.profiler.ProfileResult;
-import net.minecraft.world.SaveProperties;
-import net.minecraft.world.gen.GeneratorOptions;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -69,7 +67,7 @@ public abstract class MinecraftClientMixin {
                 if (!this.clickButton(gameMenuScreen, "fast_reset.menu.quitWorld", "menu.quitWorld", "menu.returnToMenu", "menu.disconnect") || Atum.isInWorld()) {
                     if (this.world != null) {
                         this.world.disconnect();
-                        this.disconnect(new SaveLevelScreen(TextUtil.translatable("menu.savingLevel")));
+                        this.disconnect(new MessageScreen(TextUtil.translatable("menu.savingLevel")));
                     }
                     this.setScreen(new TitleScreen());
                 }
@@ -79,7 +77,7 @@ public abstract class MinecraftClientMixin {
     }
 
     @Inject(
-            method = "startIntegratedServer(Ljava/lang/String;Ljava/util/function/Function;Ljava/util/function/Function;ZLnet/minecraft/client/MinecraftClient$WorldLoadAction;)V",
+            method = "startIntegratedServer",
             at = @At(
                     value = "INVOKE",
                     target = "Lnet/minecraft/server/integrated/IntegratedServer;isLoading()Z",
@@ -93,31 +91,15 @@ public abstract class MinecraftClientMixin {
     }
 
     @ModifyVariable(
-            method = "startIntegratedServer(Ljava/lang/String;Ljava/util/function/Function;Ljava/util/function/Function;ZLnet/minecraft/client/MinecraftClient$WorldLoadAction;)V",
+            method = "startIntegratedServer",
             at = @At("STORE")
     )
-    private LevelLoadingScreen addSeedToLLS(LevelLoadingScreen levelLoadingScreen, @Local SaveProperties saveProperties) {
-        String seed = ((ISeedStringHolder) saveProperties.getGeneratorOptions()).atum$getSeedString();
+    private LevelLoadingScreen addSeedToLLS(LevelLoadingScreen levelLoadingScreen, @Local(argsOnly = true) SaveLoader saveLoader) {
+        String seed = ((ISeedStringHolder) saveLoader.saveProperties().getGeneratorOptions()).atum$getSeedString();
         if (seed != null) {
             ((ISeedStringHolder) levelLoadingScreen).atum$setSeedString(seed);
         }
         return levelLoadingScreen;
-    }
-
-    @ModifyArg(
-            method = "method_40187",
-            at = @At(
-                    value = "INVOKE",
-                    target = "Lnet/minecraft/world/level/LevelProperties;<init>(Lnet/minecraft/world/level/LevelInfo;Lnet/minecraft/world/gen/GeneratorOptions;Lcom/mojang/serialization/Lifecycle;)V"
-            ),
-            index = 1
-    )
-    private static GeneratorOptions addSeedToGeneratorOptions(GeneratorOptions options, @Local(argsOnly = true) GeneratorOptions old) {
-        String seed = ((ISeedStringHolder) old).atum$getSeedString();
-        if (seed != null) {
-            ((ISeedStringHolder) options).atum$setSeedString(seed);
-        }
-        return options;
     }
 
     @ModifyReturnValue(
@@ -159,12 +141,12 @@ public abstract class MinecraftClientMixin {
     @Unique
     private boolean clickButton(Screen screen, String... translationKeys) {
         for (String translationKey : translationKeys) {
+            Text text = TextUtil.translatable(translationKey);
             for (Element element : screen.children()) {
                 if (!(element instanceof ButtonWidget button)) {
                     continue;
                 }
-                Text text = button.getMessage();
-                if (text instanceof TranslatableText && ((TranslatableText) text).getKey().equals(translationKey)) {
+                if (text.equals(button.getMessage())) {
                     button.onPress();
                     return true;
                 }

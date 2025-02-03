@@ -11,7 +11,6 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.TitleScreen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import org.spongepowered.asm.mixin.Mixin;
@@ -19,6 +18,8 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+
+import java.util.function.Supplier;
 
 @Mixin(TitleScreen.class)
 public abstract class TitleScreenMixin extends Screen {
@@ -39,21 +40,21 @@ public abstract class TitleScreenMixin extends Screen {
             return;
         }
 
-        this.addDrawableChild(new ButtonWidget(this.width / 2 - 124, this.height / 4 + 48, 20, 20, LiteralText.EMPTY, button -> {
+        this.addDrawableChild(new ButtonWidget(this.width / 2 - 124, this.height / 4 + 48, 20, 20, TextUtil.empty(), button -> {
             if (Screen.hasShiftDown()) {
                 MinecraftClient.getInstance().setScreen(AtumCreateWorldScreen.create(this));
                 return;
             }
             Atum.scheduleReset();
-        }) {
+        }, Supplier::get) {
             @Override
             public void renderButton(MatrixStack matrices, int mouseX, int mouseY, float delta) {
                 super.renderButton(matrices, mouseX, mouseY, delta);
 
                 RenderSystem.setShaderTexture(0, BUTTON_IMAGE);
-                DrawableHelper.drawTexture(matrices, this.x + 2, this.y + 2, 0.0F, 0.0F, 16, 16, 16, 16);
+                DrawableHelper.drawTexture(matrices, this.getX() + 2, this.getY() + 2, 0.0F, 0.0F, 16, 16, 16, 16);
                 if (Screen.hasShiftDown() && this.isHovered()) {
-                    DrawableHelper.drawCenteredText(matrices, TitleScreenMixin.this.textRenderer, TextUtil.translatable("atum.menu.open_config"), this.x + this.width / 2, this.y - 15, 16777215);
+                    DrawableHelper.drawCenteredTextWithShadow(matrices, TitleScreenMixin.this.textRenderer, TextUtil.translatable("atum.menu.open_config"), this.getX() + this.getWidth() / 2, this.getY() - 15, 16777215);
                 }
             }
         });
