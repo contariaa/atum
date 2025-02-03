@@ -29,9 +29,6 @@ public class Atum implements ClientModInitializer {
     private static SeedProvider seedProvider = DEFAULT_SEED_PROVIDER;
 
     public static void createNewWorld() {
-        if (running) {
-            return;
-        }
         running = true;
         shouldReset = false;
 

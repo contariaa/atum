@@ -103,7 +103,7 @@ public class AtumConfig implements SpeedrunConfig {
             texts.add(I18n.translate("selectWorld.bonusItems") + " " + I18n.translate("options.on"));
         }
         if (this.generatorType != AtumGeneratorType.DEFAULT) {
-            texts.add(I18n.translate("selectWorld.mapType") + " " + this.generatorType.get().getTranslationKey());
+            texts.add(I18n.translate("selectWorld.mapType") + " " + I18n.translate(this.generatorType.get().getTranslationKey()));
         }
         if (this.demoMode) {
             texts.add(I18n.translate("atum.config.demoMode", I18n.translate("options.on")));

@@ -331,7 +331,10 @@ public abstract class CreateWorldScreenMixin extends Screen {
         this.demoModeButton = this.addButton(new ButtonWidget(
                 this.width / 2 - 75, 151, 150, 20,
                 I18n.translate("atum.config.demoMode", I18n.translate(Atum.config.demoMode ? "options.on" : "options.off")),
-                button -> button.setMessage(I18n.translate("atum.config.demoMode", I18n.translate(Atum.config.demoMode ? "gui.on" : "gui.off")))
+                button -> {
+                    Atum.config.demoMode = !Atum.config.demoMode;
+                    button.setMessage(I18n.translate("atum.config.demoMode", I18n.translate(Atum.config.demoMode ? "options.on" : "options.off")));
+                }
         ));
         this.demoModeButton.visible = !this.moreOptionsOpen;
     }
