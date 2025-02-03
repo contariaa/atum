@@ -9,7 +9,6 @@
   "client": [
     "LevelInfoMixin",
     "MinecraftClientMixin",
-    "access.CreateWorldScreen$ModeAccessor",
     "access.GeneratorTypeAccessor",
     "access.IntegratedServerAccessor",
     "config.CreateWorldScreenMixin",

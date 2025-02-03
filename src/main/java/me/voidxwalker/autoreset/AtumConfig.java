@@ -6,12 +6,10 @@ import me.contaria.speedrunapi.config.api.SpeedrunConfig;
 import me.contaria.speedrunapi.config.api.annotations.Config;
 import me.contaria.speedrunapi.util.TextUtil;
 import me.voidxwalker.autoreset.interfaces.ISeedStringHolder;
-import me.voidxwalker.autoreset.mixin.access.CreateWorldScreen$ModeAccessor;
 import me.voidxwalker.autoreset.mixin.access.GeneratorTypeAccessor;
 import me.voidxwalker.autoreset.mixin.access.IntegratedServerAccessor;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.world.CreateWorldScreen;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.text.Text;
@@ -28,7 +26,7 @@ public class AtumConfig implements SpeedrunConfig {
     @Config.Ignored
     private SpeedrunConfigContainer<?> container;
 
-    public CreateWorldScreen.Mode gameMode = CreateWorldScreen.Mode.SURVIVAL;
+    public String gameMode = "survival";
     public boolean structures = true;
     // renamed from difficulty to worldDifficulty in 2.1
     // 2.0 set the default to NORMAL, causing people to play on normal instead of easy because they weren't used to it
@@ -68,7 +66,7 @@ public class AtumConfig implements SpeedrunConfig {
     }
 
     public boolean updateHasLegalSettings() {
-        return this.hasLegalSettings = (this.gameMode == CreateWorldScreen.Mode.SURVIVAL || this.gameMode == CreateWorldScreen.Mode.HARDCORE) &&
+        return this.hasLegalSettings = (this.gameMode.equals("survival") || this.gameMode.equals("hardcore")) &&
                 this.structures &&
                 !this.bonusChest &&
                 !this.cheatsEnabled &&
@@ -90,8 +88,8 @@ public class AtumConfig implements SpeedrunConfig {
 
     private List<String> getIllegalSettingsStrings() {
         List<String> texts = new ArrayList<>();
-        if (this.gameMode != CreateWorldScreen.Mode.SURVIVAL && this.gameMode != CreateWorldScreen.Mode.HARDCORE) {
-            texts.add(I18n.translate("selectWorld.gameMode") + ": " + I18n.translate("selectWorld.gameMode." + ((CreateWorldScreen$ModeAccessor) (Object) this.gameMode).atum$getTranslationSuffix()));
+        if (!this.gameMode.equals("survival") && !this.gameMode.equals("hardcore")) {
+            texts.add(I18n.translate("selectWorld.gameMode") + ": " + I18n.translate("selectWorld.gameMode." + this.gameMode));
         }
         if (this.cheatsEnabled) {
             texts.add(I18n.translate("selectWorld.allowCommands") + " " + I18n.translate("options.on"));
@@ -103,7 +101,7 @@ public class AtumConfig implements SpeedrunConfig {
             texts.add(I18n.translate("selectWorld.bonusItems") + " " + I18n.translate("options.on"));
         }
         if (this.generatorType != AtumGeneratorType.DEFAULT) {
-            texts.add(I18n.translate("selectWorld.mapType") + " " + this.generatorType.get().getTranslationKey());
+            texts.add(I18n.translate("selectWorld.mapType") + " " + I18n.translate(this.generatorType.get().getTranslationKey()));
         }
         if (this.demoMode) {
             texts.add(I18n.translate("atum.config.demoMode", I18n.translate("options.on")));
@@ -112,8 +110,8 @@ public class AtumConfig implements SpeedrunConfig {
     }
 
     public void resetToLegalSettings() {
-        if (this.gameMode != CreateWorldScreen.Mode.HARDCORE) {
-            this.gameMode = CreateWorldScreen.Mode.SURVIVAL;
+        if (!this.gameMode.equals("hardcore")) {
+            this.gameMode = "survival";
         }
         this.structures = true;
         this.bonusChest = false;
@@ -147,7 +145,7 @@ public class AtumConfig implements SpeedrunConfig {
                 seedLine = "Resetting a random seed";
             }
             seedLine += ", ";
-            if (Atum.config.gameMode == CreateWorldScreen.Mode.HARDCORE) {
+            if (this.gameMode.equals("hardcore")) {
                 seedLine += "hc";
             } else {
                 seedLine += Atum.config.difficulty.getName().charAt(0);
