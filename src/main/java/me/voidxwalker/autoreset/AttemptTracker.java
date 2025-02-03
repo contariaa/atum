@@ -70,7 +70,7 @@ public class AttemptTracker {
 
         private void save() {
             try {
-                Files.write(this.attemptsFile.toPath(), String.valueOf(this.get()).getBytes(StandardCharsets.UTF_8));
+                Files.writeString(this.attemptsFile.toPath(), String.valueOf(this.get()));
             } catch (IOException e) {
                 Atum.LOGGER.error("Failed to save attempts file: {}", this.attemptsFile.getName(), e);
             }

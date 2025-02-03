@@ -17,9 +17,7 @@ import me.voidxwalker.autoreset.mixin.access.LevelScreenProviderAccessor;
 import me.voidxwalker.autoreset.mixin.access.LevelScreenProviderAccessor2;
 import me.voidxwalker.autoreset.mixin.access.WorldCreatorAccessor;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.Drawable;
 import net.minecraft.client.gui.Element;
-import net.minecraft.client.gui.Selectable;
 import net.minecraft.client.gui.screen.ConfirmScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.world.CreateWorldScreen;
@@ -31,6 +29,7 @@ import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.resource.DataConfiguration;
+import net.minecraft.resource.featuretoggle.FeatureFlags;
 import net.minecraft.screen.ScreenTexts;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.text.Text;
@@ -74,9 +73,6 @@ public abstract class CreateWorldScreenMixin extends Screen {
 
     @Shadow
     protected abstract void createLevel();
-
-    @Shadow
-    protected abstract <T extends Element & Drawable & Selectable> T addDrawableChild(T drawableElement);
 
     protected CreateWorldScreenMixin(Text title) {
         super(title);
@@ -223,11 +219,11 @@ public abstract class CreateWorldScreenMixin extends Screen {
         this.worldCreator.setGenerateStructures(Atum.config.structures);
         this.worldCreator.setBonusChestEnabled(Atum.config.bonusChest);
 
-        this.worldCreator.setWorldType(Atum.config.generatorType.get(this.worldCreator.getGeneratorOptionsHolder().getCombinedRegistryManager().get(RegistryKeys.WORLD_PRESET)));
+        this.worldCreator.setWorldType(Atum.config.generatorType.get(this.worldCreator.getGeneratorOptionsHolder().getCombinedRegistryManager().getOrThrow(RegistryKeys.WORLD_PRESET)));
         this.loadGeneratorDetails(Atum.config.generatorType, Atum.config.generatorDetails);
 
         if (Atum.config.hasModifiedGameRules()) {
-            this.worldCreator.getGameRules().setAllValues(Atum.config.gameRules, null);
+            this.worldCreator.setGameRules(Atum.config.gameRules.copy(this.worldCreator.getGeneratorOptionsHolder().dataConfiguration().enabledFeatures()));
         }
         this.worldCreator.setGeneratorOptionsHolder(new GeneratorOptionsHolder(
                 this.worldCreator.getGeneratorOptionsHolder().generatorOptions(),
@@ -235,7 +231,8 @@ public abstract class CreateWorldScreenMixin extends Screen {
                 this.worldCreator.getGeneratorOptionsHolder().selectedDimensions(),
                 this.worldCreator.getGeneratorOptionsHolder().combinedDynamicRegistries(),
                 this.worldCreator.getGeneratorOptionsHolder().dataPackContents(),
-                new DataConfiguration(Atum.config.dataPackSettings, Atum.config.featureSet)
+                new DataConfiguration(Atum.config.dataPackSettings, Atum.config.featureSet),
+                this.worldCreator.getGeneratorOptionsHolder().initialWorldCreationOptions()
         ));
     }
 
@@ -256,9 +253,9 @@ public abstract class CreateWorldScreenMixin extends Screen {
                 ).ifPresent(generatorConfig -> this.worldCreator.applyModifier(LevelScreenProviderAccessor.atum$createFlatModifier(generatorConfig)));
             }
             case SINGLE_BIOME_SURFACE -> {
-                Registry<Biome> registry = this.worldCreator.getGeneratorOptionsHolder().getCombinedRegistryManager().get(RegistryKeys.BIOME);
+                Registry<Biome> registry = this.worldCreator.getGeneratorOptionsHolder().getCombinedRegistryManager().getOrThrow(RegistryKeys.BIOME);
                 Identifier id = IdentifierUtil.parse(generatorDetails);
-                Optional<RegistryEntry<Biome>> biome = registry.getOrEmpty(id).flatMap(registry::getKey).map(registry::entryOf);
+                Optional<RegistryEntry<Biome>> biome = Optional.ofNullable(registry.get(id)).map(registry::getEntry);
                 if (biome.isPresent()) {
                     this.worldCreator.applyModifier(LevelScreenProviderAccessor2.atum$createSingleBiomeModifier(biome.get()));
                 } else {
@@ -359,7 +356,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
         Atum.config.generatorType = AtumConfig.AtumWorldType.from(this.worldCreator.getWorldType());
         Atum.config.generatorDetails = this.saveGeneratorDetails(Atum.config.generatorType);
 
-        Atum.config.setGameRules(this.worldCreator.getGameRules().copy());
+        Atum.config.setGameRules(this.worldCreator.getGameRules().copy(FeatureFlags.FEATURE_MANAGER.getFeatureSet()));
         Atum.config.setDataPackSettings(this.worldCreator.getGeneratorOptionsHolder().dataConfiguration().dataPacks());
         Atum.config.featureSet = this.worldCreator.getGeneratorOptionsHolder().dataConfiguration().enabledFeatures();
     }

@@ -58,7 +58,7 @@ public class AtumConfig implements SpeedrunConfig {
     public AtumWorldType generatorType = AtumWorldType.DEFAULT;
     public String generatorDetails = "";
     @Config.Access(setter = "setGameRules")
-    public GameRules gameRules = new GameRules();
+    public GameRules gameRules = new GameRules(FeatureFlags.FEATURE_MANAGER.getFeatureSet());
     @Config.Access(setter = "setDataPackSettings")
     public DataPackSettings dataPackSettings = DataPackSettings.SAFE_MODE;
     public FeatureSet featureSet = FeatureFlags.DEFAULT_ENABLED_FEATURES;
@@ -100,9 +100,9 @@ public class AtumConfig implements SpeedrunConfig {
     }
 
     private boolean areGameRulesModified(GameRules gameRules) {
-        GameRules defaultGameRules = new GameRules();
+        GameRules defaultGameRules = new GameRules(FeatureFlags.FEATURE_MANAGER.getFeatureSet());
         MutableBoolean modified = new MutableBoolean();
-        GameRules.accept(new GameRules.Visitor() {
+        gameRules.accept(new GameRules.Visitor() {
             @Override
             public <T extends GameRules.Rule<T>> void visit(GameRules.Key<T> key, GameRules.Type<T> type) {
                 if (modified.isFalse() && gameRules.get(key).getCommandResult() != defaultGameRules.get(key).getCommandResult()) {
@@ -114,9 +114,9 @@ public class AtumConfig implements SpeedrunConfig {
     }
 
     private JsonElement serializeGameRules(GameRules gameRules) {
-        GameRules defaultGameRules = new GameRules();
+        GameRules defaultGameRules = new GameRules(FeatureFlags.FEATURE_MANAGER.getFeatureSet());
         JsonObject jsonObject = new JsonObject();
-        GameRules.accept(new GameRules.Visitor() {
+        gameRules.accept(new GameRules.Visitor() {
             @Override
             public <T extends GameRules.Rule<T>> void visit(GameRules.Key<T> key, GameRules.Type<T> type) {
                 GameRules.Rule<T> rule = gameRules.get(key);
@@ -129,8 +129,8 @@ public class AtumConfig implements SpeedrunConfig {
     }
 
     private GameRules deserializeGameRules(JsonElement jsonElement) {
-        GameRules gameRules = new GameRules();
-        GameRules.accept(new GameRules.Visitor() {
+        GameRules gameRules = new GameRules(FeatureFlags.FEATURE_MANAGER.getFeatureSet());
+        gameRules.accept(new GameRules.Visitor() {
             @Override
             public <T extends GameRules.Rule<T>> void visit(GameRules.Key<T> key, GameRules.Type<T> type) {
                 if (jsonElement.getAsJsonObject().has(key.getName())) {
@@ -382,7 +382,7 @@ public class AtumConfig implements SpeedrunConfig {
         this.cheatsEnabled = false;
         this.generatorType = AtumWorldType.DEFAULT;
         this.generatorDetails = "";
-        this.setGameRules(new GameRules());
+        this.setGameRules(new GameRules(FeatureFlags.FEATURE_MANAGER.getFeatureSet()));
         if (Files.exists(this.dataPackDirectory)) {
             try {
                 FileUtils.cleanDirectory(this.dataPackDirectory.toFile());
@@ -497,7 +497,7 @@ public class AtumConfig implements SpeedrunConfig {
         }
 
         public WorldCreator.WorldType get(Registry<WorldPreset> registry) {
-            return new WorldCreator.WorldType(registry.getEntry(this.worldPreset).orElseThrow());
+            return new WorldCreator.WorldType(registry.getEntry(registry.get(this.worldPreset)));
         }
 
         public static @Nullable AtumWorldType from(WorldCreator.WorldType worldType) {

@@ -2,4 +2,4 @@ accessWidener v2 named
 
 accessible class net/minecraft/client/gui/screen/world/CreateWorldScreen$WorldCreationSettings
 accessible method net/minecraft/client/gui/screen/world/CreateWorldScreen$WorldCreationSettings <init> (Lnet/minecraft/world/level/WorldGenSettings;Lnet/minecraft/resource/DataConfiguration;)V
-accessible method net/minecraft/client/gui/screen/world/CreateWorldScreen <init> (Lnet/minecraft/client/MinecraftClient;Lnet/minecraft/client/gui/screen/Screen;Lnet/minecraft/client/world/GeneratorOptionsHolder;Ljava/util/Optional;Ljava/util/OptionalLong;)V
+accessible method net/minecraft/client/gui/screen/world/CreateWorldScreen <init> (Lnet/minecraft/client/MinecraftClient;Lnet/minecraft/client/gui/screen/Screen;Lnet/minecraft/client/world/GeneratorOptionsHolder;Ljava/util/Optional;Ljava/util/OptionalLong;Lnet/minecraft/client/gui/screen/world/CreateWorldCallback;)V

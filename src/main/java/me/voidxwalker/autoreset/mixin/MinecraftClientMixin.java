@@ -14,14 +14,14 @@ import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.server.SaveLoader;
 import net.minecraft.text.Text;
-import net.minecraft.util.profiler.ProfileResult;
+import net.minecraft.util.profiler.TickTimeTracker;
 import org.jetbrains.annotations.Nullable;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
@@ -29,8 +29,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(value = MinecraftClient.class, priority = 500)
 public abstract class MinecraftClientMixin {
     @Shadow
-    @Nullable
-    private ProfileResult tickProfilerResult;
+    @Final
+    private TickTimeTracker tickTimeTracker;
 
     @Shadow
     @Nullable
@@ -107,12 +107,13 @@ public abstract class MinecraftClientMixin {
         return isDemo || Atum.inDemoMode();
     }
 
+    // TODO
+/*
     @Inject(
             method = "disconnect(Lnet/minecraft/client/gui/screen/Screen;)V",
             at = @At("TAIL")
     )
     private void fixGhostPie(CallbackInfo ci) {
-        this.tickProfilerResult = null;
         if (this.getDebugHud().shouldShowRenderingChart()) {
             this.getDebugHud().toggleRenderingChart();
         }
@@ -128,6 +129,8 @@ public abstract class MinecraftClientMixin {
     private boolean fixGhostPieBlink(boolean active) {
         return active && this.getDebugHud().shouldShowRenderingChart();
     }
+
+ */
 
     @Inject(
             method = "cleanUpAfterCrash",
