@@ -6,7 +6,6 @@ import me.voidxwalker.autoreset.Atum;
 import me.voidxwalker.autoreset.interfaces.ISeedStringHolder;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.screen.LevelLoadingScreen;
-import net.minecraft.client.util.math.MatrixStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -18,16 +17,16 @@ public abstract class LevelLoadingScreenMixin implements ISeedStringHolder {
     @Unique
     private String seedString;
 
-    @WrapOperation(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/LevelLoadingScreen;drawCenteredString(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/font/TextRenderer;Ljava/lang/String;III)V"))
-    private void drawSeedString(LevelLoadingScreen screen, MatrixStack matrices, TextRenderer textRenderer, String s, int x, int y, int color, Operation<Void> original) {
-        original.call(screen, matrices, textRenderer, s, x, y, color);
+    @WrapOperation(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/LevelLoadingScreen;drawCenteredString(Lnet/minecraft/client/font/TextRenderer;Ljava/lang/String;III)V"))
+    private void drawSeedString(LevelLoadingScreen screen, TextRenderer textRenderer, String s, int x, int y, int color, Operation<Void> original) {
+        original.call(screen, textRenderer, s, x, y, color);
         if (!Atum.isRunning()) {
             return;
         }
         if (Atum.inDemoMode()) {
-            screen.drawCenteredString(matrices, textRenderer, "North Carolina", x, y - 20, color);
+            screen.drawCenteredString(textRenderer, "North Carolina", x, y - 20, color);
         } else if (!this.seedString.isEmpty()) {
-            screen.drawCenteredString(matrices, textRenderer, Atum.getSeedProvider().shouldShowSeed() ? this.seedString : "Set Seed", x, y - 20, color);
+            screen.drawCenteredString(textRenderer, Atum.getSeedProvider().shouldShowSeed() ? this.seedString : "Set Seed", x, y - 20, color);
         }
     }
 

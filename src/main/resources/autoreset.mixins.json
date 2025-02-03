@@ -7,13 +7,12 @@
     "defaultRequire": 1
   },
   "client": [
-    "GeneratorOptionsMixin",
+    "LevelInfoMixin",
     "MinecraftClientMixin",
     "access.CreateWorldScreen$ModeAccessor",
     "access.GeneratorTypeAccessor",
-    "access.RuleAccessor",
+    "access.IntegratedServerAccessor",
     "config.CreateWorldScreenMixin",
-    "config.MoreOptionsDialogMixin",
     "gui.DeathScreenMixin",
     "gui.DebugHudMixin",
     "gui.LevelLoadingScreenMixin",

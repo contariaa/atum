@@ -9,19 +9,15 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.screen.*;
 import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.options.GameOptions;
+import net.minecraft.client.resource.language.I18n;
 import net.minecraft.client.world.ClientWorld;
-import net.minecraft.text.Text;
-import net.minecraft.text.TranslatableText;
-import net.minecraft.util.profiler.ProfileResult;
+import net.minecraft.world.level.LevelInfo;
 import org.jetbrains.annotations.Nullable;
-import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
@@ -29,21 +25,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(value = MinecraftClient.class, priority = 500)
 public abstract class MinecraftClientMixin {
     @Shadow
-    @Final
-    public GameOptions options;
-    @Shadow
-    @Nullable
-    private ProfileResult tickProfilerResult;
-
-    @Shadow
     @Nullable
     public Screen currentScreen;
     @Shadow
     @Nullable
     public ClientWorld world;
-
-    @Shadow
-    protected abstract boolean shouldMonitorTickDuration();
 
     @Shadow
     public abstract void openScreen(@Nullable Screen screen);
@@ -77,7 +63,7 @@ public abstract class MinecraftClientMixin {
     }
 
     @Inject(
-            method = "startIntegratedServer(Ljava/lang/String;Lnet/minecraft/util/registry/RegistryTracker$Modifiable;Ljava/util/function/Function;Lcom/mojang/datafixers/util/Function4;ZLnet/minecraft/client/MinecraftClient$WorldLoadAction;)V",
+            method = "startIntegratedServer",
             at = @At(
                     value = "INVOKE",
                     target = "Lnet/minecraft/server/integrated/IntegratedServer;isLoading()Z",
@@ -91,11 +77,11 @@ public abstract class MinecraftClientMixin {
     }
 
     @ModifyVariable(
-            method = "startIntegratedServer(Ljava/lang/String;Lnet/minecraft/util/registry/RegistryTracker$Modifiable;Ljava/util/function/Function;Lcom/mojang/datafixers/util/Function4;ZLnet/minecraft/client/MinecraftClient$WorldLoadAction;)V",
+            method = "startIntegratedServer",
             at = @At("STORE")
     )
-    private LevelLoadingScreen addSeedToLLS(LevelLoadingScreen levelLoadingScreen, @Local MinecraftClient.IntegratedResourceManager integratedResourceManager) {
-        String seed = ((ISeedStringHolder) integratedResourceManager.getSaveProperties().getGeneratorOptions()).atum$getSeedString();
+    private LevelLoadingScreen addSeedToLLS(LevelLoadingScreen levelLoadingScreen, @Local(argsOnly = true) LevelInfo levelInfo) {
+        String seed = ((ISeedStringHolder) (Object) levelInfo).atum$getSeedString();
         if (seed != null) {
             ((ISeedStringHolder) levelLoadingScreen).atum$setSeedString(seed);
         }
@@ -111,26 +97,6 @@ public abstract class MinecraftClientMixin {
     }
 
     @Inject(
-            method = "disconnect(Lnet/minecraft/client/gui/screen/Screen;)V",
-            at = @At("TAIL")
-    )
-    private void fixGhostPie(CallbackInfo ci) {
-        this.tickProfilerResult = null;
-        this.options.debugProfilerEnabled = false;
-    }
-
-    @ModifyArg(
-            method = "run",
-            at = @At(
-                    value = "INVOKE",
-                    target = "Lnet/minecraft/client/MinecraftClient;endMonitor(ZLnet/minecraft/util/TickDurationMonitor;)V"
-            )
-    )
-    private boolean fixGhostPieBlink(boolean active) {
-        return active && this.shouldMonitorTickDuration();
-    }
-
-    @Inject(
             method = "cleanUpAfterCrash",
             at = @At("HEAD")
     )
@@ -141,13 +107,13 @@ public abstract class MinecraftClientMixin {
     @Unique
     private boolean clickButton(Screen screen, String... translationKeys) {
         for (String translationKey : translationKeys) {
+            String translation = I18n.translate(translationKey);
             for (Element element : screen.children()) {
                 if (!(element instanceof ButtonWidget)) {
                     continue;
                 }
                 ButtonWidget button = ((ButtonWidget) element);
-                Text text = button.getMessage();
-                if (text instanceof TranslatableText && ((TranslatableText) text).getKey().equals(translationKey)) {
+                if (translation.equals(button.getMessage())) {
                     button.onPress();
                     return true;
                 }

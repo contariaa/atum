@@ -1,31 +1,29 @@
 package me.voidxwalker.autoreset.mixin.config;
 
-import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import me.contaria.speedrunapi.util.TextUtil;
 import me.voidxwalker.autoreset.AttemptTracker;
 import me.voidxwalker.autoreset.Atum;
+import me.voidxwalker.autoreset.AtumConfig;
 import me.voidxwalker.autoreset.AtumCreateWorldScreen;
 import me.voidxwalker.autoreset.api.seedprovider.SeedProvider;
-import me.voidxwalker.autoreset.interfaces.IMoreOptionsDialog;
+import me.voidxwalker.autoreset.interfaces.ISeedStringHolder;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.screen.ConfirmScreen;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.ScreenTexts;
 import net.minecraft.client.gui.screen.world.CreateWorldScreen;
-import net.minecraft.client.gui.screen.world.MoreOptionsDialog;
 import net.minecraft.client.gui.widget.AbstractButtonWidget;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.resource.DataPackSettings;
+import net.minecraft.client.resource.language.I18n;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.StringNbtReader;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.text.Text;
-import net.minecraft.util.registry.RegistryTracker;
-import net.minecraft.world.Difficulty;
-import net.minecraft.world.GameRules;
-import net.minecraft.world.gen.GeneratorOptions;
+import net.minecraft.world.level.LevelGeneratorType;
+import net.minecraft.world.level.LevelInfo;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -33,17 +31,12 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.Slice;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.HashSet;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Mixin(CreateWorldScreen.class)
 public abstract class CreateWorldScreenMixin extends Screen {
@@ -52,33 +45,18 @@ public abstract class CreateWorldScreenMixin extends Screen {
     private Screen parent;
 
     @Shadow
-    private Difficulty safeDifficulty;
-    @Shadow
-    private Difficulty difficulty;
-    @Shadow
     private CreateWorldScreen.Mode currentMode;
     @Shadow
     private boolean cheatsEnabled;
     @Shadow
     private boolean tweakedCheats;
-    @Shadow
-    private GameRules gameRules;
-    @Shadow
-    protected DataPackSettings dataPackSettings;
-    @Shadow
-    private @Nullable Path dataPackTempDir;
 
-    @Shadow
-    @Final
-    public MoreOptionsDialog moreOptionsDialog;
     @Shadow
     private boolean moreOptionsOpen;
     @Shadow
     private TextFieldWidget levelNameField;
     @Shadow
     private ButtonWidget createLevelButton;
-    @Shadow
-    private ButtonWidget dataPacksButton;
 
     @Unique
     private AbstractButtonWidget demoModeButton;
@@ -89,12 +67,30 @@ public abstract class CreateWorldScreenMixin extends Screen {
     @Shadow
     protected abstract void createLevel();
 
+    @Shadow
+    private String seed;
+    @Shadow
+    private boolean structures;
+    @Shadow
+    private boolean bonusChest;
+    @Shadow
+    private int generatorType;
+
+    @Shadow
+    private TextFieldWidget seedField;
+
+    @Shadow
+    public CompoundTag generatorOptionsTag;
+
+    @Shadow
+    private ButtonWidget gameModeSwitchButton;
+
     protected CreateWorldScreenMixin(Text title) {
         super(title);
     }
 
     @Inject(
-            method = "<init>(Lnet/minecraft/client/gui/screen/Screen;Lnet/minecraft/client/gui/screen/world/MoreOptionsDialog;)V",
+            method = "<init>",
             at = @At("TAIL")
     )
     private void loadAtumConfigurations(CallbackInfo ci) {
@@ -103,7 +99,6 @@ public abstract class CreateWorldScreenMixin extends Screen {
         }
 
         this.load();
-        this.initDataPacks();
     }
 
     @WrapWithCondition(
@@ -115,8 +110,8 @@ public abstract class CreateWorldScreenMixin extends Screen {
             ),
             slice = @Slice(
                     from = @At(
-                            value = "FIELD",
-                            target = "Lnet/minecraft/client/gui/screen/ScreenTexts;CANCEL:Lnet/minecraft/text/Text;"
+                            value = "CONSTANT",
+                            args = "stringValue=gui.cancel"
                     )
             )
     )
@@ -137,7 +132,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
         if (seed == null) {
             return;
         }
-        ((IMoreOptionsDialog) this.moreOptionsDialog).atum$setSeed(seed);
+        this.seedField.setText(seed);
 
         if (Atum.isRunning()) {
             this.createWorld(seed);
@@ -154,10 +149,10 @@ public abstract class CreateWorldScreenMixin extends Screen {
     private void updateLevelNameField(boolean moreOptionsOpen, CallbackInfo ci) {
         if (!Atum.isRunning() && this.isAtum()) {
             this.levelNameField.setText(Atum.config.attemptTracker.getWorldName(
-                    ((IMoreOptionsDialog) this.moreOptionsDialog).atum$isSetSeed() ? AttemptTracker.Type.SSG : AttemptTracker.Type.RSG
+                    !this.seed.isEmpty() ? AttemptTracker.Type.SSG : AttemptTracker.Type.RSG
             ));
             if (this.demoModeButton != null) {
-                this.demoModeButton.visible = moreOptionsOpen;
+                this.demoModeButton.visible = !moreOptionsOpen;
             }
         }
     }
@@ -194,8 +189,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
             method = "render",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/client/gui/screen/world/CreateWorldScreen;drawStringWithShadow(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/font/TextRenderer;Ljava/lang/String;III)V",
-                    ordinal = 0
+                    target = "Lnet/minecraft/client/gui/screen/world/CreateWorldScreen;drawString(Lnet/minecraft/client/font/TextRenderer;Ljava/lang/String;III)V"
             ),
             slice = @Slice(
                     from = @At(
@@ -204,88 +198,77 @@ public abstract class CreateWorldScreenMixin extends Screen {
                     )
             )
     )
-    private boolean doNotShowResultFolderOnConfigScreen(CreateWorldScreen screen, MatrixStack matrices, TextRenderer textRenderer, String string, int x, int y, int color) {
+    private boolean doNotShowResultFolderOnConfigScreen(CreateWorldScreen screen, TextRenderer textRenderer, String s, int x, int y, int color) {
         return !this.isAtum();
     }
 
-    @ModifyExpressionValue(
-            method = "copyDataPack(Ljava/nio/file/Path;Lnet/minecraft/client/MinecraftClient;)Ljava/nio/file/Path;",
+    @ModifyArg(
+            method = "render",
             at = @At(
                     value = "INVOKE",
-                    target = "Ljava/util/stream/Stream;filter(Ljava/util/function/Predicate;)Ljava/util/stream/Stream;"
+                    target = "Lnet/minecraft/client/gui/screen/world/CreateWorldScreen;drawCenteredString(Lnet/minecraft/client/font/TextRenderer;Ljava/lang/String;III)V"
+            ),
+            slice = @Slice(
+                    from = @At(
+                            value = "FIELD",
+                            target = "Lnet/minecraft/client/gui/screen/world/CreateWorldScreen;firstGameModeDescriptionLine:Ljava/lang/String;"
+                    )
+            ),
+            index = 3
+    )
+    private int modifyGameModeDescriptionY(int y) {
+        if (this.isAtum()) {
+            return y - 15;
+        }
+        return y;
+    }
+
+    @WrapWithCondition(
+            method = "createLevel",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/client/MinecraftClient;openScreen(Lnet/minecraft/client/gui/screen/Screen;)V"
             )
     )
-    private static Stream<Path> filterAtumDataPacks(Stream<Path> dataPacks, Path directory, MinecraftClient client) {
-        if (!directory.equals(Atum.config.dataPackDirectory)) {
-            return dataPacks;
-        }
+    private boolean doNotOpenTitleScreen(MinecraftClient client, Screen screen) {
+        return !Atum.isRunning();
+    }
 
-        Set<String> expected = Atum.config.getExpectedDataPacks();
-        Set<Path> paths = new HashSet<>();
-
-        // instantly collect to bypass lazy evaluation
-        dataPacks = dataPacks.filter(path -> {
-            // check if datapacks are expected in main directory
-            if (path.getParent().equals(directory)) {
-                String name = "file/" + path.relativize(Atum.config.dataPackDirectory);
-                if (expected.remove(name)) {
-                    paths.add(path);
-                    return true;
-                }
-                return false;
-            }
-            // check if path belongs to any expected datapack
-            for (Path dataPack : paths) {
-                if (path.startsWith(dataPack)) {
-                    return true;
-                }
-            }
-            return false;
-        }).collect(Collectors.toList()).stream();
-
-        if (!expected.isEmpty()) {
-            Atum.config.dataPackMismatch = true;
-            Atum.LOGGER.warn("Data pack mismatch, some of the configured files are missing!");
-        }
-        return dataPacks;
+    @ModifyArg(
+            method = "createLevel",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/client/MinecraftClient;startIntegratedServer(Ljava/lang/String;Ljava/lang/String;Lnet/minecraft/world/level/LevelInfo;)V"
+            ),
+            index = 2
+    )
+    private LevelInfo addSeedToLevelInfo(LevelInfo levelInfo) {
+        ((ISeedStringHolder) (Object) levelInfo).atum$setSeedString(this.seed);
+        return levelInfo;
     }
 
     @Unique
     private void load() {
         this.currentMode = Atum.config.gameMode;
-        this.safeDifficulty = this.difficulty = Atum.config.difficulty;
+        this.structures = Atum.config.structures;
         this.cheatsEnabled = Atum.config.cheatsEnabled;
+        this.bonusChest = Atum.config.bonusChest;
         this.tweakedCheats = true;
-        if (Atum.config.hasModifiedGameRules()) {
-            this.gameRules.setAllValues(Atum.config.gameRules, null);
-        }
-        this.dataPackSettings = new DataPackSettings(Atum.config.dataPackSettings.getEnabled(), Atum.config.dataPackSettings.getDisabled());
 
-        ((IMoreOptionsDialog) this.moreOptionsDialog).atum$loadAtumConfigurations();
+        this.generatorType = Atum.config.generatorType.get().getId();
+        this.generatorOptionsTag = this.loadGeneratorDetails(Atum.config.generatorDetails);
     }
 
     @Unique
-    private void initDataPacks() {
-        if (!Atum.isRunning()) {
-            this.dataPackTempDir = Atum.config.dataPackDirectory;
-            return;
+    private CompoundTag loadGeneratorDetails(String generatorDetails) {
+        if (!generatorDetails.isEmpty()) {
+            try {
+                return StringNbtReader.parse(generatorDetails);
+            } catch (CommandSyntaxException e) {
+                Atum.LOGGER.error("Failed to parse generator details!", e);
+            }
         }
-
-        if (Atum.config.isDefaultDataPackSettings(this.dataPackSettings)) {
-            return;
-        }
-
-        if (!Files.isDirectory(Atum.config.dataPackDirectory)) {
-            Atum.config.dataPackMismatch = true;
-            Atum.LOGGER.warn("Data pack mismatch, the Atum data pack directory is missing!");
-            return;
-        }
-
-        this.dataPackTempDir = CreateWorldScreen.copyDataPack(Atum.config.dataPackDirectory, this.client);
-        if (this.dataPackTempDir == null) {
-            Atum.config.dataPackMismatch = true;
-            Atum.LOGGER.warn("Data pack mismatch, failed to copy data packs!");
-        }
+        return new CompoundTag();
     }
 
     @Unique
@@ -312,7 +295,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
         if (Atum.inDemoMode()) {
             String demoWorldName = Atum.config.attemptTracker.incrementAndGetWorldName(AttemptTracker.Type.DEMO);
             Atum.LOGGER.info("Creating \"{}\" with demo seed...", demoWorldName);
-            MinecraftClient.getInstance().createWorld(demoWorldName, MinecraftServer.DEMO_LEVEL_INFO, RegistryTracker.create(), GeneratorOptions.DEMO_CONFIG);
+            MinecraftClient.getInstance().startIntegratedServer(demoWorldName, demoWorldName, MinecraftServer.DEMO_LEVEL_INFO);
             return;
         }
 
@@ -336,32 +319,32 @@ public abstract class CreateWorldScreenMixin extends Screen {
     @Unique
     private void initConfigScreen() {
         this.levelNameField.setText(Atum.config.attemptTracker.getWorldName(
-                ((IMoreOptionsDialog) this.moreOptionsDialog).atum$isSetSeed() ? AttemptTracker.Type.SSG : AttemptTracker.Type.RSG
+                !this.seed.isEmpty() ? AttemptTracker.Type.SSG : AttemptTracker.Type.RSG
         ));
         this.levelNameField.setSelected(false);
         this.levelNameField.setEditable(false);
         this.levelNameField.setFocusUnlocked(false);
         this.levelNameField.active = false;
 
-        this.dataPacksButton.active = this.dataPackTempDir != null;
-        this.createLevelButton.setMessage(TextUtil.translatable("gui.done"));
+        this.createLevelButton.setMessage(I18n.translate("gui.done"));
+        this.gameModeSwitchButton.y -= 15;
         this.demoModeButton = this.addButton(new ButtonWidget(
-                this.width / 2 + 5, 151, 150, 20,
-                TextUtil.translatable("atum.config.demoMode", ScreenTexts.getToggleText(Atum.config.demoMode)),
-                button -> button.setMessage(TextUtil.translatable("atum.config.demoMode", ScreenTexts.getToggleText(Atum.config.demoMode = !Atum.config.demoMode)))
+                this.width / 2 - 75, 151, 150, 20,
+                I18n.translate("atum.config.demoMode", I18n.translate(Atum.config.demoMode ? "options.on" : "options.off")),
+                button -> button.setMessage(I18n.translate("atum.config.demoMode", I18n.translate(Atum.config.demoMode ? "gui.on" : "gui.off")))
         ));
-        this.demoModeButton.visible = this.moreOptionsOpen;
+        this.demoModeButton.visible = !this.moreOptionsOpen;
     }
 
     @Unique
     private void save() {
         Atum.config.gameMode = this.currentMode;
-        Atum.config.difficulty = this.difficulty;
+        Atum.config.structures = this.structures;
         Atum.config.cheatsEnabled = this.cheatsEnabled;
-        Atum.config.setGameRules(this.gameRules.copy());
-        Atum.config.setDataPackSettings(this.dataPackSettings);
+        Atum.config.bonusChest = this.bonusChest;
 
-        ((IMoreOptionsDialog) this.moreOptionsDialog).atum$saveAtumConfigurations();
+        Atum.config.generatorType = AtumConfig.AtumGeneratorType.from(LevelGeneratorType.TYPES[this.generatorType]);
+        Atum.config.generatorDetails = this.generatorOptionsTag != null && !this.generatorOptionsTag.isEmpty() ? this.generatorOptionsTag.toString() : "";
     }
 
     @Unique
@@ -377,7 +360,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
             }
             Atum.config.save();
             MinecraftClient.getInstance().openScreen(this.parent);
-        }, TextUtil.translatable("atum.menu.legal_settings.warning"), Atum.config.getIllegalSettingsWarning(), TextUtil.translatable("atum.menu.legal_settings.confirm"), TextUtil.translatable("atum.menu.legal_settings.reset")));
+        }, TextUtil.translatable("atum.menu.legal_settings.warning"), Atum.config.getIllegalSettingsWarning(), I18n.translate("atum.menu.legal_settings.confirm"), I18n.translate("atum.menu.legal_settings.reset")));
     }
 
     @Unique
