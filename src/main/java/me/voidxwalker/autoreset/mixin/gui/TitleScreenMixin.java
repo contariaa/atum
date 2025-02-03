@@ -46,8 +46,8 @@ public abstract class TitleScreenMixin extends Screen {
             Atum.scheduleReset();
         }, Supplier::get) {
             @Override
-            public void renderButton(DrawContext context, int mouseX, int mouseY, float delta) {
-                super.renderButton(context, mouseX, mouseY, delta);
+            public void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
+                super.renderWidget(context, mouseX, mouseY, delta);
 
                 context.drawTexture(BUTTON_IMAGE, this.getX() + 2, this.getY() + 2, 0.0F, 0.0F, 16, 16, 16, 16);
                 if (Screen.hasShiftDown() && this.isHovered()) {

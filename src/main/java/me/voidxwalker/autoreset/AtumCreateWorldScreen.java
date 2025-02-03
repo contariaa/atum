@@ -33,7 +33,7 @@ public class AtumCreateWorldScreen extends CreateWorldScreen {
     public static AtumCreateWorldScreen create(@Nullable Screen parent) {
         MinecraftClient client = MinecraftClient.getInstance();
         client.setScreenAndRender(new MessageScreen(TextUtil.translatable("createWorld.preparing")));
-        ResourcePackManager resourcePackManager = new ResourcePackManager(new VanillaDataPackProvider());
+        ResourcePackManager resourcePackManager = new ResourcePackManager(new VanillaDataPackProvider(client.getSymlinkFinder()));
         SaveLoading.ServerConfig serverConfig = CreateWorldScreenAccessor.atum$createServerConfig(resourcePackManager, DataConfiguration.SAFE_MODE);
         CompletableFuture<GeneratorOptionsHolder> completableFuture = SaveLoading.load(serverConfig, (context) -> new SaveLoading.LoadContext<>(new WorldCreationSettings(new WorldGenSettings(GeneratorOptions.createRandom(), WorldPresets.createDemoOptions(context.worldGenRegistryManager())), context.dataConfiguration()), context.dimensionsRegistryManager()), (resourceManager, dataPackContents, combinedDynamicRegistries, generatorOptions) -> {
             resourceManager.close();

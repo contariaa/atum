@@ -24,10 +24,7 @@ import net.minecraft.client.gui.screen.ConfirmScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.world.CreateWorldScreen;
 import net.minecraft.client.gui.screen.world.WorldCreator;
-import net.minecraft.client.gui.widget.CyclingButtonWidget;
-import net.minecraft.client.gui.widget.GridWidget;
-import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.client.gui.widget.Widget;
+import net.minecraft.client.gui.widget.*;
 import net.minecraft.client.world.GeneratorOptionsHolder;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
@@ -124,7 +121,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
             method = "init",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/client/gui/widget/GridWidget$Adder;add(Lnet/minecraft/client/gui/widget/Widget;)Lnet/minecraft/client/gui/widget/Widget;"
+                    target = "Lnet/minecraft/client/gui/widget/DirectionalLayoutWidget;add(Lnet/minecraft/client/gui/widget/Widget;)Lnet/minecraft/client/gui/widget/Widget;"
             ),
             slice = @Slice(
                     from = @At(
@@ -133,7 +130,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
                     )
             )
     )
-    private boolean removeCancelButton(GridWidget.Adder adder, Widget widget) {
+    private boolean removeCancelButton(DirectionalLayoutWidget instance, Widget widget) {
         return !this.isAtum();
     }
 
@@ -319,7 +316,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
         if (Atum.inDemoMode()) {
             String demoWorldName = Atum.config.attemptTracker.incrementAndGetWorldName(AttemptTracker.Type.DEMO);
             Atum.LOGGER.info("Creating \"{}\" with demo seed...", demoWorldName);
-            MinecraftClient.getInstance().createIntegratedServerLoader().createAndStart(demoWorldName, MinecraftServer.DEMO_LEVEL_INFO, GeneratorOptions.DEMO_OPTIONS, WorldPresets::createDemoOptions);
+            MinecraftClient.getInstance().createIntegratedServerLoader().createAndStart(demoWorldName, MinecraftServer.DEMO_LEVEL_INFO, GeneratorOptions.DEMO_OPTIONS, WorldPresets::createDemoOptions, null);
             return;
         }
 
@@ -433,7 +430,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
                 method = "<init>",
                 at = @At(
                         value = "INVOKE",
-                        target = "Lnet/minecraft/client/gui/screen/world/CreateWorldScreen;method_48647(Lnet/minecraft/client/gui/screen/world/CreateWorldScreen;Lnet/minecraft/client/gui/Element;)V"
+                        target = "Lnet/minecraft/client/gui/screen/world/CreateWorldScreen;method_48649(Lnet/minecraft/client/gui/screen/world/CreateWorldScreen;Lnet/minecraft/client/gui/Element;)V"
                 )
         )
         private boolean deactivateWorldNameFieldInitialFocus(CreateWorldScreen createWorldScreen, Element element) {

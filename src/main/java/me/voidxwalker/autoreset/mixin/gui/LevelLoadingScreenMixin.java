@@ -6,7 +6,8 @@ import me.voidxwalker.autoreset.Atum;
 import me.voidxwalker.autoreset.interfaces.ISeedStringHolder;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.LevelLoadingScreen;
+import net.minecraft.client.gui.screen.world.LevelLoadingScreen;
+import net.minecraft.text.Text;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -22,10 +23,10 @@ public abstract class LevelLoadingScreenMixin implements ISeedStringHolder {
             method = "render",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/client/gui/DrawContext;drawCenteredTextWithShadow(Lnet/minecraft/client/font/TextRenderer;Ljava/lang/String;III)V"
+                    target = "Lnet/minecraft/client/gui/DrawContext;drawCenteredTextWithShadow(Lnet/minecraft/client/font/TextRenderer;Lnet/minecraft/text/Text;III)V"
             )
     )
-    private void drawSeedString(DrawContext context, TextRenderer textRenderer, String text, int x, int y, int color, Operation<Void> original) {
+    private void drawSeedString(DrawContext context, TextRenderer textRenderer, Text text, int x, int y, int color, Operation<Void> original) {
         original.call(context, textRenderer, text, x, y, color);
         if (!Atum.isRunning()) {
             return;
