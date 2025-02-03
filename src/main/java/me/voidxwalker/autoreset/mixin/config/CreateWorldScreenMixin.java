@@ -448,7 +448,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
         )
         private GridWidget.Adder addDemoModeButton(GridWidget.Adder adder, CreateWorldScreen createWorldScreen) {
             if (createWorldScreen instanceof AtumCreateWorldScreen) {
-                adder.add(CyclingButtonWidget.onOffBuilder().build(0, 0, 210, 20, TextUtil.translatable("atum.config.demoMode"), (button, value) -> Atum.config.demoMode = value));
+                adder.add(CyclingButtonWidget.onOffBuilder(Atum.config.demoMode).build(0, 0, 210, 20, TextUtil.translatable("atum.config.demoMode"), (button, value) -> Atum.config.demoMode = value));
             }
             return adder;
         }
