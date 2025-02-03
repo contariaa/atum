@@ -5,9 +5,8 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import me.voidxwalker.autoreset.Atum;
 import me.voidxwalker.autoreset.interfaces.ISeedStringHolder;
 import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawableHelper;
+import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.LevelLoadingScreen;
-import net.minecraft.client.util.math.MatrixStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -23,18 +22,18 @@ public abstract class LevelLoadingScreenMixin implements ISeedStringHolder {
             method = "render",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/client/gui/screen/LevelLoadingScreen;drawCenteredTextWithShadow(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/font/TextRenderer;Ljava/lang/String;III)V"
+                    target = "Lnet/minecraft/client/gui/DrawContext;drawCenteredTextWithShadow(Lnet/minecraft/client/font/TextRenderer;Ljava/lang/String;III)V"
             )
     )
-    private void drawSeedString(MatrixStack matrices, TextRenderer textRenderer, String s, int x, int y, int color, Operation<Void> original) {
-        original.call(matrices, textRenderer, s, x, y, color);
+    private void drawSeedString(DrawContext context, TextRenderer textRenderer, String text, int x, int y, int color, Operation<Void> original) {
+        original.call(context, textRenderer, text, x, y, color);
         if (!Atum.isRunning()) {
             return;
         }
         if (Atum.inDemoMode()) {
-            DrawableHelper.drawCenteredTextWithShadow(matrices, textRenderer, "North Carolina", x, y - 20, color);
+            context.drawCenteredTextWithShadow(textRenderer, "North Carolina", x, y - 20, color);
         } else if (this.seedString != null && !this.seedString.isEmpty()) {
-            DrawableHelper.drawCenteredTextWithShadow(matrices, textRenderer, Atum.getSeedProvider().shouldShowSeed() ? this.seedString : "Set Seed", x, y - 20, color);
+            context.drawCenteredTextWithShadow(textRenderer, Atum.getSeedProvider().shouldShowSeed() ? this.seedString : "Set Seed", x, y - 20, color);
         }
     }
 
