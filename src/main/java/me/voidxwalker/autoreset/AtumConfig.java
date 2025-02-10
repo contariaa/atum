@@ -29,8 +29,6 @@ public class AtumConfig implements SpeedrunConfig {
 
     public CreateWorldScreen.Mode gameMode = CreateWorldScreen.Mode.SURVIVAL;
     public boolean structures = true;
-    // renamed from difficulty to worldDifficulty in 2.1
-    // 2.0 set the default to NORMAL, causing people to play on normal instead of easy because they weren't used to it
     @Config.Strings.MaxChars(32)
     public String seed = "";
     public boolean bonusChest = false;
