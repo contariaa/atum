@@ -342,6 +342,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
     private void save() {
         Atum.config.gameMode = this.gameMode;
         Atum.config.structures = this.structures;
+        Atum.config.seed = this.seed;
         Atum.config.cheatsEnabled = this.cheatsEnabled;
         Atum.config.bonusChest = this.bonusChest;
 
