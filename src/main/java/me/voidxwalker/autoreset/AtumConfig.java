@@ -15,7 +15,6 @@ import net.minecraft.client.gui.screen.world.CreateWorldScreen;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.text.Text;
-import net.minecraft.world.Difficulty;
 import net.minecraft.world.level.LevelGeneratorType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -32,7 +31,6 @@ public class AtumConfig implements SpeedrunConfig {
     public boolean structures = true;
     // renamed from difficulty to worldDifficulty in 2.1
     // 2.0 set the default to NORMAL, causing people to play on normal instead of easy because they weren't used to it
-    public Difficulty difficulty = Difficulty.EASY;
     @Config.Strings.MaxChars(32)
     public String seed = "";
     public boolean bonusChest = false;
@@ -145,12 +143,6 @@ public class AtumConfig implements SpeedrunConfig {
                 }
             } else {
                 seedLine = "Resetting a random seed";
-            }
-            seedLine += ", ";
-            if (Atum.config.gameMode == CreateWorldScreen.Mode.HARDCORE) {
-                seedLine += "hc";
-            } else {
-                seedLine += Atum.config.difficulty.getName().charAt(0);
             }
             debugText.add(seedLine);
         }
