@@ -32,7 +32,6 @@
   "mixins": [
     "autoreset.mixins.json"
   ],
-  "accessWidener": "atum.accesswidener",
   "depends": {
     "fabricloader": ">=0.15.0",
     "minecraft": "1.14.4",
