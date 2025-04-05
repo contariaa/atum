@@ -13,6 +13,7 @@ import org.lwjgl.glfw.GLFW;
 
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 public class Atum implements ClientModInitializer {
     public static final Logger LOGGER = LogManager.getLogger();
@@ -25,7 +26,7 @@ public class Atum implements ClientModInitializer {
     private static boolean running = false;
     private static boolean shouldReset;
 
-    private static final SeedProvider DEFAULT_SEED_PROVIDER = () -> Optional.of(Atum.config.seed);
+    private static final SeedProvider DEFAULT_SEED_PROVIDER = () -> CompletableFuture.completedFuture(Atum.config.seed);
     private static SeedProvider seedProvider = DEFAULT_SEED_PROVIDER;
 
     public static void createNewWorld() {

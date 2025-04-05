@@ -1,13 +1,17 @@
 package me.voidxwalker.autoreset.api.seedprovider;
 
-import me.voidxwalker.autoreset.Atum;
-import me.voidxwalker.autoreset.AtumCreateWorldScreen;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.text.Text;
 
+import java.util.LinkedList;
+import java.util.List;
+
+/**
+ * A waiting screen intended to wait for a seed to become playable with the ability to cancel playing a seed.
+ */
 public abstract class AtumWaitingScreen extends Screen {
-    private boolean decided = false;
+    private List<Runnable> onTick = new LinkedList<>();
+    private List<Runnable> onCancel = new LinkedList<>();
 
     protected AtumWaitingScreen(Text title) {
         super(title);
@@ -18,17 +22,6 @@ public abstract class AtumWaitingScreen extends Screen {
         this.onClose();
     }
 
-    @SuppressWarnings("unused")
-    protected final void continueWorldCreation() {
-        this.onDecided();
-        MinecraftClient.getInstance().openScreen(new AtumCreateWorldScreen(null));
-    }
-
-    private void onDecided() {
-        Atum.ensureState(!this.decided, "AtumWaitingScreen continue method(s) called more than once!");
-        this.decided = true;
-    }
-
     @Override
     public boolean shouldCloseOnEsc() {
         return false;
@@ -36,17 +29,22 @@ public abstract class AtumWaitingScreen extends Screen {
 
     @Override
     public final void onClose() {
-        this.onDecided();
-        Atum.stopRunning();
-        super.onClose();
+        for (Runnable r : onCancel) r.run();
     }
 
+    /**
+     * If an implementation overrides tick, it needs to run super.tick().
+     */
     @Override
-    public final void removed() {
-        Atum.ensureState(this.decided, "Improper closing of AtumWaitingScreen. Methods continueWorldCreation or cancelWorldCreation should be used.");
-        onRemoved();
+    public void tick() {
+        for (Runnable r : onTick) r.run();
     }
 
-    protected void onRemoved() {
+    public final void addTickActivity(Runnable r) {
+        onTick.add(r);
+    }
+
+    public final void addCancelActivity(Runnable r) {
+        onCancel.add(r);
     }
 }

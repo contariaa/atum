@@ -6,6 +6,7 @@ import me.contaria.speedrunapi.util.TextUtil;
 import me.voidxwalker.autoreset.AttemptTracker;
 import me.voidxwalker.autoreset.Atum;
 import me.voidxwalker.autoreset.AtumCreateWorldScreen;
+import me.voidxwalker.autoreset.api.seedprovider.AtumWaitingScreen;
 import me.voidxwalker.autoreset.api.seedprovider.SeedProvider;
 import me.voidxwalker.autoreset.interfaces.IMoreOptionsDialog;
 import net.minecraft.client.MinecraftClient;
@@ -40,8 +41,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -80,6 +82,8 @@ public abstract class CreateWorldScreenMixin extends Screen {
     @Shadow
     private ButtonWidget dataPacksButton;
 
+    @Unique
+    private CompletableFuture<String> seedFuture;
     @Unique
     private AbstractButtonWidget demoModeButton;
 
@@ -293,18 +297,51 @@ public abstract class CreateWorldScreenMixin extends Screen {
         if (!Atum.isRunning()) {
             return Objects.requireNonNull(Atum.config.seed);
         }
-        SeedProvider seedProvider = Atum.getSeedProvider();
-        Optional<String> seed = seedProvider.getSeed();
-        if (seed.isPresent()) {
-            return seed.get();
-        }
-        if (MinecraftClient.getInstance().isOnThread()) {
-            MinecraftClient.getInstance().openScreen(Atum.getSeedProvider().getWaitingScreen());
+        assert client != null;
+        try {
+            SeedProvider seedProvider = Atum.getSeedProvider();
+            if (seedFuture == null) seedFuture = seedProvider.requestSeed();
+            if (seedFuture.isDone()) {
+                return seedFuture.get();
+            }
+            AtumWaitingScreen waitingScreen;
+            if (MinecraftClient.getInstance().isOnThread() && (waitingScreen = Atum.getSeedProvider().getWaitingScreen().orElse(null)) != null) {
+                // When the waiting screen wants to cancel the seed, cancel the seed future, and then let the tick
+                // activity move us back to this screen. Technically this can be a race condition where the seed future
+                // completes as the waiting screen wants to cancel it. But this isn't really an issue, as futures are
+                // inherently thread-safe so the race won't cause any misbehavior, and cancelling an already completed
+                // seed future doesn't cause any issues, and the tick activity will simply reopen this screen and the
+                // seed future will resolve to whichever completion won the race.
+                waitingScreen.addCancelActivity(() -> seedFuture.cancel(true));
+                waitingScreen.addTickActivity(() -> {
+                    // Move back to this screen once the seed future is done, however it is done.
+                    if (seedFuture.isDone()) client.openScreen(this);
+                });
+                MinecraftClient.getInstance().openScreen(waitingScreen);
+                return null;
+            }
+            return seedFuture.join();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        } catch (CancellationException e) {
+            Atum.LOGGER.warn("The seed has been cancelled.");
+            onSeedFutureFail(e);
+            return null;
+        } catch (Exception e) {
+            Atum.LOGGER.error("Failed to get seed from the seed provider!", e);
+            onSeedFutureFail(e);
             return null;
         }
-        // Note: If a mod ever makes AtumCreateWorldScreens in parallel, the next two lines would cause a race condition.
-        seedProvider.waitForSeed();
-        return seedProvider.getSeed().orElseThrow(() -> new IllegalStateException("No seed found after waiting!"));
+    }
+
+    @Unique
+    private void onSeedFutureFail(Throwable ex) {
+        assert client != null;
+        Atum.stopRunning();
+        client.execute(() -> {
+            client.openScreen(null);
+            Atum.getSeedProvider().onFail(ex);
+        });
     }
 
     @Unique
