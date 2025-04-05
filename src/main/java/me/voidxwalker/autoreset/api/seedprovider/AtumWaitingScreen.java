@@ -10,8 +10,8 @@ import java.util.List;
  * A waiting screen intended to wait for a seed to become playable with the ability to cancel playing a seed.
  */
 public abstract class AtumWaitingScreen extends Screen {
-    private List<Runnable> onTick = new LinkedList<>();
-    private List<Runnable> onCancel = new LinkedList<>();
+    private final List<Runnable> onTick = new LinkedList<>();
+    private final List<Runnable> onCancel = new LinkedList<>();
 
     protected AtumWaitingScreen(Text title) {
         super(title);
