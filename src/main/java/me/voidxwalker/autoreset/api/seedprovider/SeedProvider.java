@@ -20,9 +20,8 @@ public interface SeedProvider {
     }
 
     /**
-     * Gets the waiting screen.
-     * The implemented waiting screen should run the provided continueWorldCreation method once a seed is available, or alternatively cancelWorldCreation.
-     * The implemented waiting screen can also override shouldCloseOnEsc(), returning true to allow cancelling with the 'escape' key.
+     * Gets the waiting screen. The implemented screen only needs to override the render method. It may also allow for
+     * cancelling of seeds with esc, or it can call cancelWorldCreation through other means such as a button.
      */
     default Optional<AtumWaitingScreen> getWaitingScreen() {
         return Optional.empty();
