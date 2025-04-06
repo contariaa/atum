@@ -302,10 +302,8 @@ public abstract class CreateWorldScreenMixin extends Screen {
             SeedProvider seedProvider = Atum.getSeedProvider();
             if (seedFuture == null) {
                 seedFuture = seedProvider.requestSeed();
-                if (!seedFuture.isDone()) {
-                    Atum.SEED_FUTURES.add(seedFuture);
-                    seedFuture.handle((s, throwable) -> Atum.SEED_FUTURES.remove(seedFuture));
-                }
+                Atum.SEED_FUTURES.add(seedFuture);
+                seedFuture.handle((s, throwable) -> Atum.SEED_FUTURES.remove(seedFuture));
             }
             if (seedFuture.isDone()) {
                 return seedFuture.get();
@@ -343,8 +341,9 @@ public abstract class CreateWorldScreenMixin extends Screen {
     @Unique
     private void onSeedFutureFail(Throwable ex) {
         assert client != null;
-        Atum.stopRunning();
+        Atum.cancelAllSeeds();
         client.execute(() -> {
+            Atum.stopRunning();
             client.openScreen(null);
             Atum.getSeedProvider().onFail(ex);
         });

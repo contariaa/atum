@@ -12,7 +12,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.glfw.GLFW;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 public class Atum implements ClientModInitializer {
@@ -101,7 +103,7 @@ public class Atum implements ClientModInitializer {
         if (!condition) throw new IllegalStateException(exceptionMessage);
     }
 
-    public static void cancelAllSeeds(){
+    public static void cancelAllSeeds() {
         // Copy the collection to avoid modification during iteration
         new ArrayList<>(SEED_FUTURES).forEach(f -> f.cancel(true));
     }
