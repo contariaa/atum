@@ -1,5 +1,6 @@
 package me.voidxwalker.autoreset;
 
+import io.netty.util.internal.ConcurrentSet;
 import me.voidxwalker.autoreset.api.seedprovider.AtumWaitingScreen;
 import me.voidxwalker.autoreset.api.seedprovider.SeedProvider;
 import net.fabricmc.api.ClientModInitializer;
@@ -11,8 +12,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.glfw.GLFW;
 
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 public class Atum implements ClientModInitializer {
@@ -26,6 +26,7 @@ public class Atum implements ClientModInitializer {
     private static boolean running = false;
     private static boolean shouldReset;
 
+    public static final Set<CompletableFuture<String>> SEED_FUTURES = new ConcurrentSet<>();
     private static final SeedProvider DEFAULT_SEED_PROVIDER = () -> CompletableFuture.completedFuture(Atum.config.seed);
     private static SeedProvider seedProvider = DEFAULT_SEED_PROVIDER;
 
@@ -44,6 +45,7 @@ public class Atum implements ClientModInitializer {
         shouldReset = false;
         running = false;
         config.dataPackMismatch = false;
+        cancelAllSeeds();
     }
 
     public static void scheduleReset() {
@@ -97,6 +99,11 @@ public class Atum implements ClientModInitializer {
 
     public static void ensureState(boolean condition, String exceptionMessage) throws IllegalStateException {
         if (!condition) throw new IllegalStateException(exceptionMessage);
+    }
+
+    public static void cancelAllSeeds(){
+        // Copy the collection to avoid modification during iteration
+        new ArrayList<>(SEED_FUTURES).forEach(f -> f.cancel(true));
     }
 
     @Override

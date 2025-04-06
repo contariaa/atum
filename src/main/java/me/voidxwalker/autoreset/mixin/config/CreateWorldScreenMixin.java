@@ -300,7 +300,13 @@ public abstract class CreateWorldScreenMixin extends Screen {
         assert client != null;
         try {
             SeedProvider seedProvider = Atum.getSeedProvider();
-            if (seedFuture == null) seedFuture = seedProvider.requestSeed();
+            if (seedFuture == null) {
+                seedFuture = seedProvider.requestSeed();
+                if (!seedFuture.isDone()) {
+                    Atum.SEED_FUTURES.add(seedFuture);
+                    seedFuture.handle((s, throwable) -> Atum.SEED_FUTURES.remove(seedFuture));
+                }
+            }
             if (seedFuture.isDone()) {
                 return seedFuture.get();
             }
