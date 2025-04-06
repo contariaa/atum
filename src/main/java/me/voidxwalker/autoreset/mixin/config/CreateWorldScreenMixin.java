@@ -344,7 +344,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
         Atum.cancelAllSeeds();
         client.execute(() -> {
             Atum.stopRunning();
-            client.openScreen(null);
+            if (client.world != null) client.openScreen(null);
             Atum.getSeedProvider().onFail(ex);
         });
     }
