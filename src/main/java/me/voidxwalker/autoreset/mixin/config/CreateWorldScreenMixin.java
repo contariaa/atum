@@ -331,6 +331,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
                 // stopped running mid world creation, we should cancel this seed future to make sure this one is also
                 // caught.
                 seedFuture.cancel(true);
+                seedFuture.join(); // Move to CancellationException block or possibly the other exception block.
                 return null;
             }
             return seedFuture.join();
