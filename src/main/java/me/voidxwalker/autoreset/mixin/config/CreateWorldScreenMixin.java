@@ -306,7 +306,9 @@ public abstract class CreateWorldScreenMixin extends Screen {
                 seedFuture.handle((s, throwable) -> Atum.SEED_FUTURES.remove(seedFuture));
             }
             if (seedFuture.isDone()) {
-                return seedFuture.get();
+                // Could do .get() but then we have to handle an extra exception type for no reason, .join() should
+                // immediately return because supposedly it isDone.
+                return seedFuture.join();
             }
             AtumWaitingScreen waitingScreen;
             if (MinecraftClient.getInstance().isOnThread() && (waitingScreen = Atum.getSeedProvider().getWaitingScreen().orElse(null)) != null) {
@@ -332,8 +334,6 @@ public abstract class CreateWorldScreenMixin extends Screen {
                 return null;
             }
             return seedFuture.join();
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
         } catch (CancellationException e) {
             Atum.LOGGER.warn("The seed has been cancelled.");
             onSeedFutureFail(e);
