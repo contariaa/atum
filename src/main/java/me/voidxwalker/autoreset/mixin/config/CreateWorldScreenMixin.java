@@ -324,6 +324,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
                 MinecraftClient.getInstance().openScreen(waitingScreen);
                 return null;
             }
+            if (!Atum.isRunning()) return null;
             return seedFuture.join();
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
