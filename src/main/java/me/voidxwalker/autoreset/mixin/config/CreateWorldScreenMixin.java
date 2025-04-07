@@ -324,7 +324,13 @@ public abstract class CreateWorldScreenMixin extends Screen {
                 MinecraftClient.getInstance().openScreen(waitingScreen);
                 return null;
             }
-            if (!Atum.isRunning()) return null;
+            if (!Atum.isRunning()) {
+                // Atum.stopRunning() may have ran right before this seedFuture was added to SEED_FUTURES, so if atum
+                // stopped running mid world creation, we should cancel this seed future to make sure this one is also
+                // caught.
+                seedFuture.cancel(true);
+                return null;
+            }
             return seedFuture.join();
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
