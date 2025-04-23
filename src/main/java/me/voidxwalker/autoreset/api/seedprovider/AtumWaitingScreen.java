@@ -32,11 +32,8 @@ public abstract class AtumWaitingScreen extends Screen {
         for (Runnable r : onCancel) r.run();
     }
 
-    /**
-     * If an implementation overrides tick, it needs to run super.tick().
-     */
     @Override
-    public void tick() {
+    public final void tick() {
         for (Runnable r : onTick) r.run();
     }
 
