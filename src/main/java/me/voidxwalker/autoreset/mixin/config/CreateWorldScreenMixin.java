@@ -351,13 +351,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
     private void onSeedFutureFail(Throwable ex) {
         assert client != null;
         Atum.cancelAllSeeds();
-        client.execute(() -> {
-            if (Atum.isRunning()) {
-                Atum.stopRunning();
-                if (client.world == null) client.openScreen(null);
-            }
-            Atum.getSeedProvider().onFail(ex);
-        });
+        Atum.SEED_FAILURES.add(ex);
     }
 
     @Unique
