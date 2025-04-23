@@ -30,6 +30,7 @@ public interface SeedProvider {
     /**
      * Runs when an exception or cancellation occurs while resolving the seed future.
      */
-    default void onFail(@Nullable Throwable ex){
+    @SuppressWarnings("unused")
+    default void onFail(@Nullable Throwable ex) {
     }
 }
