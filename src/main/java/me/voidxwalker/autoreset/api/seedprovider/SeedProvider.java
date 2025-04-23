@@ -29,6 +29,8 @@ public interface SeedProvider {
 
     /**
      * Runs when an exception or cancellation occurs while resolving the seed future.
+     * This method will be called individually for each exception with no guarantee of timing.
+     * This method is guaranteed to be called from the client thread.
      */
     @SuppressWarnings("unused")
     default void onFail(@Nullable Throwable ex) {
