@@ -44,6 +44,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -339,7 +340,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
             Atum.LOGGER.warn("The seed has been cancelled.");
             onSeedFutureFail(e);
             return null;
-        } catch (Exception e) {
+        } catch (CompletionException e) {
             Atum.LOGGER.error("Failed to get seed from the seed provider!", e);
             onSeedFutureFail(e);
             return null;
