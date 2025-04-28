@@ -342,11 +342,11 @@ public abstract class CreateWorldScreenMixin extends Screen {
             return this.seedFuture.join();
         } catch (CancellationException e) {
             Atum.LOGGER.warn("The seed has been cancelled.");
-            onSeedFutureFail(e);
+            this.onSeedFutureFail(e);
             return null;
         } catch (CompletionException e) {
             Atum.LOGGER.error("Failed to get seed from the seed provider!", e);
-            onSeedFutureFail(e);
+            this.onSeedFutureFail(e);
             return null;
         }
     }
