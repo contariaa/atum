@@ -116,7 +116,9 @@ public class Atum implements ClientModInitializer {
         if (!SEED_FAILURES.isEmpty()) {
             if (isRunning()) {
                 stopRunning();
-                if (client.world == null) client.openScreen(null);
+                if (client.world == null) {
+                    client.openScreen(null);
+                }
             }
             while (!SEED_FAILURES.isEmpty()) {
                 getSeedProvider().onFail(SEED_FAILURES.poll());

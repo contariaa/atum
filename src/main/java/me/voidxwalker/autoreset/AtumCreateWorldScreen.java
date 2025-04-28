@@ -17,7 +17,7 @@ public class AtumCreateWorldScreen extends CreateWorldScreen {
     }
 
     public Job getJob() {
-        return job;
+        return this.job;
     }
 
     public enum Job {

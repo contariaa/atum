@@ -29,19 +29,23 @@ public abstract class AtumWaitingScreen extends Screen {
 
     @Override
     public final void onClose() {
-        for (Runnable r : onCancel) r.run();
+        for (Runnable r : this.onCancel) {
+            r.run();
+        }
     }
 
     @Override
     public final void tick() {
-        for (Runnable r : onTick) r.run();
+        for (Runnable r : this.onTick) {
+            r.run();
+        }
     }
 
     public final void addTickActivity(Runnable r) {
-        onTick.add(r);
+        this.onTick.add(r);
     }
 
     public final void addCancelActivity(Runnable r) {
-        onCancel.add(r);
+        this.onCancel.add(r);
     }
 }
