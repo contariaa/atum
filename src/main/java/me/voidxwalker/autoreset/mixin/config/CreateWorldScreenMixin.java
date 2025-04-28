@@ -355,6 +355,9 @@ public abstract class CreateWorldScreenMixin extends Screen {
         assert client != null;
         Atum.cancelAllSeeds();
         Atum.SEED_FAILURES.add(ex);
+        if (MinecraftClient.getInstance().isOnThread()) {
+            Atum.checkSeedFailures();
+        }
     }
 
     @Unique
