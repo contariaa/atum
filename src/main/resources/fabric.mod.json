@@ -14,7 +14,8 @@
   ],
   "contributors": [
     "contaria",
-    "tildejustin"
+    "tildejustin",
+    "DuncanRuns"
   ],
   "license": "MIT",
   "icon": "assets/atum/icon.png",
@@ -42,7 +43,7 @@
     "fast_reset": "<2.0",
     "worldpreview": "<6.0.0",
     "chunkcacher": "<1.4.2",
-    "fsg-mod": "<2.4.2",
-    "seedqueue": "<1.3"
+    "fsg-mod": "<4.1.0",
+    "seedqueue": "<1.5"
   }
 }
