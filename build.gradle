@@ -24,7 +24,7 @@ dependencies {
     modImplementation "net.fabricmc:fabric-loader:$loader_version"
 
     // check for the latest versions at https://jitpack.io/#kingcontaria/speedrunapi
-    modImplementation "com.github.KingContaria:SpeedrunAPI:2f40139715"
+    modImplementation "com.github.KingContaria:SpeedrunAPI:caa9b86560"
 }
 
 processResources {
