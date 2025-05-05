@@ -1,6 +1,5 @@
 package me.voidxwalker.autoreset.api.seedprovider;
 
-import me.voidxwalker.autoreset.Atum;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.text.Text;
 
