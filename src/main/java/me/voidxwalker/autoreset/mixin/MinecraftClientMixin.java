@@ -104,6 +104,17 @@ public abstract class MinecraftClientMixin {
         Atum.stopRunning();
     }
 
+    @Inject(
+            method = "run",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/client/MinecraftClient;render(Z)V"
+            )
+    )
+    private void checkSeedFailures(CallbackInfo ci) {
+        Atum.checkSeedFailures();
+    }
+
     @Unique
     private boolean clickButton(Screen screen, String... translationKeys) {
         for (String translationKey : translationKeys) {

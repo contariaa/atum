@@ -1,5 +1,6 @@
 package me.voidxwalker.autoreset;
 
+import io.netty.util.internal.ConcurrentSet;
 import me.voidxwalker.autoreset.api.seedprovider.AtumWaitingScreen;
 import me.voidxwalker.autoreset.api.seedprovider.SeedProvider;
 import net.fabricmc.api.ClientModInitializer;
@@ -7,12 +8,15 @@ import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.options.KeyBinding;
+import net.minecraft.text.LiteralText;
+import net.minecraft.util.Formatting;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.glfw.GLFW;
 
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class Atum implements ClientModInitializer {
     public static final Logger LOGGER = LogManager.getLogger();
@@ -25,7 +29,9 @@ public class Atum implements ClientModInitializer {
     private static boolean running = false;
     private static boolean shouldReset;
 
-    private static final SeedProvider DEFAULT_SEED_PROVIDER = () -> Optional.of(Atum.config.seed);
+    public static final Queue<Throwable> SEED_FAILURES = new ConcurrentLinkedQueue<>();
+    public static final Set<CompletableFuture<String>> SEED_FUTURES = new ConcurrentSet<>();
+    private static final SeedProvider DEFAULT_SEED_PROVIDER = () -> CompletableFuture.completedFuture(Atum.config.seed);
     private static SeedProvider seedProvider = DEFAULT_SEED_PROVIDER;
 
     public static void createNewWorld() {
@@ -42,6 +48,8 @@ public class Atum implements ClientModInitializer {
     public static void stopRunning() {
         shouldReset = false;
         running = false;
+
+        cancelAllSeeds();
     }
 
     public static void scheduleReset() {
@@ -95,6 +103,26 @@ public class Atum implements ClientModInitializer {
 
     public static void ensureState(boolean condition, String exceptionMessage) throws IllegalStateException {
         if (!condition) throw new IllegalStateException(exceptionMessage);
+    }
+
+    public static void cancelAllSeeds() {
+        // Copy the collection to avoid modification during iteration
+        new ArrayList<>(SEED_FUTURES).forEach(f -> f.cancel(true));
+    }
+
+    public static void checkSeedFailures() {
+        MinecraftClient client = MinecraftClient.getInstance();
+        if (!SEED_FAILURES.isEmpty()) {
+            if (isRunning()) {
+                stopRunning();
+                if (client.world == null) {
+                    client.openScreen(null);
+                }
+            }
+            while (!SEED_FAILURES.isEmpty()) {
+                getSeedProvider().onFail(SEED_FAILURES.poll());
+            }
+        }
     }
 
     @Override
