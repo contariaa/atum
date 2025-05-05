@@ -7,6 +7,8 @@ import me.voidxwalker.autoreset.AttemptTracker;
 import me.voidxwalker.autoreset.Atum;
 import me.voidxwalker.autoreset.AtumConfig;
 import me.voidxwalker.autoreset.AtumCreateWorldScreen;
+import me.voidxwalker.autoreset.AtumCreateWorldScreen.Job;
+import me.voidxwalker.autoreset.api.seedprovider.AtumWaitingScreen;
 import me.voidxwalker.autoreset.api.seedprovider.SeedProvider;
 import me.voidxwalker.autoreset.interfaces.ISeedStringHolder;
 import net.minecraft.client.MinecraftClient;
@@ -36,7 +38,9 @@ import org.spongepowered.asm.mixin.injection.Slice;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.Objects;
-import java.util.Optional;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 
 @Mixin(CreateWorldScreen.class)
 public abstract class CreateWorldScreenMixin extends Screen {
@@ -74,6 +78,8 @@ public abstract class CreateWorldScreenMixin extends Screen {
     @Shadow
     private ButtonWidget gameModeSwitchButton;
 
+    @Unique
+    private CompletableFuture<String> seedFuture;
     @Unique
     private AbstractButtonWidget demoModeButton;
 
@@ -132,7 +138,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
         }
         this.seedField.setText(seed);
 
-        if (Atum.isRunning()) {
+        if (this.isAtumReset()) {
             this.createWorld(seed);
             return;
         }
@@ -145,7 +151,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
             at = @At("TAIL")
     )
     private void updateLevelNameField(boolean moreOptionsOpen, CallbackInfo ci) {
-        if (!Atum.isRunning() && this.isAtum()) {
+        if (this.isAtumConfig()) {
             this.levelNameField.setText(Atum.config.attemptTracker.getWorldName(
                     !this.seed.isEmpty() ? AttemptTracker.Type.SSG : AttemptTracker.Type.RSG
             ));
@@ -161,7 +167,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
             cancellable = true
     )
     private void saveAtumConfigurations(CallbackInfo ci) {
-        if (!this.isAtum() || Atum.isRunning()) {
+        if (!this.isAtumConfig()) {
             return;
         }
 
@@ -180,7 +186,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
     )
     private boolean doNotUpdateEmptySaveFolderName(CreateWorldScreen screen) {
         // micro-optimization, we call updateSaveFolderName ourselves when creating the level
-        return !Atum.isRunning();
+        return !this.isAtumReset();
     }
 
     @WrapWithCondition(
@@ -229,7 +235,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
             )
     )
     private boolean doNotOpenTitleScreen(MinecraftClient client, Screen screen) {
-        return !Atum.isRunning();
+        return !this.isAtumReset();
     }
 
     @ModifyArg(
@@ -272,21 +278,68 @@ public abstract class CreateWorldScreenMixin extends Screen {
 
     @Unique
     private @Nullable String getSeed() {
-        if (!Atum.isRunning()) {
+        if (this.isAtumConfig()) {
             return Objects.requireNonNull(Atum.config.seed);
         }
-        SeedProvider seedProvider = Atum.getSeedProvider();
-        Optional<String> seed = seedProvider.getSeed();
-        if (seed.isPresent()) {
-            return seed.get();
-        }
-        if (MinecraftClient.getInstance().isOnThread()) {
-            MinecraftClient.getInstance().openScreen(Atum.getSeedProvider().getWaitingScreen());
+        try {
+            SeedProvider seedProvider = Atum.getSeedProvider();
+            if (this.seedFuture == null) {
+                this.seedFuture = seedProvider.requestSeed();
+                Atum.SEED_FUTURES.add(this.seedFuture);
+                this.seedFuture.handle((s, throwable) -> Atum.SEED_FUTURES.remove(this.seedFuture));
+            }
+            if (this.seedFuture.isDone()) {
+                // Could do .get() but then we have to handle an extra exception type for no reason, .join() should
+                // immediately return because supposedly it isDone.
+                return this.seedFuture.join();
+            }
+            AtumWaitingScreen waitingScreen;
+            if (MinecraftClient.getInstance().isOnThread() && (waitingScreen = Atum.getSeedProvider().getWaitingScreen().orElse(null)) != null) {
+                // When the waiting screen wants to cancel the seed, cancel the seed future, and then let the tick
+                // activity move us back to this screen. Technically this can be a race condition where the seed future
+                // completes as the waiting screen wants to cancel it. But this isn't really an issue, as futures are
+                // inherently thread-safe so the race won't cause any misbehavior, and cancelling an already completed
+                // seed future doesn't cause any issues, and the tick activity will simply reopen this screen and the
+                // seed future will resolve to whichever completion won the race.
+                waitingScreen.addCancelActivity(() -> this.seedFuture.cancel(true));
+                waitingScreen.addTickActivity(() -> {
+                    // Move back to this screen once the seed future is done, however it is done.
+                    if (this.seedFuture.isDone()) {
+                        MinecraftClient.getInstance().openScreen(this);
+                    }
+                });
+                MinecraftClient.getInstance().openScreen(waitingScreen);
+                return null;
+            }
+            // Job is already CREATION, we need to make sure we check atum is still running to prevent race conditions
+            // with mods that create worlds on other threads (seedqueue).
+            if (!Atum.isRunning()) {
+                // Atum.stopRunning() may have ran right before this seedFuture was added to SEED_FUTURES, so if atum
+                // stopped running mid world creation, we should cancel this seed future to make sure this one is also
+                // caught.
+                this.seedFuture.cancel(true);
+                this.seedFuture.join(); // Move to CancellationException block or possibly the other exception block.
+                return null;
+            }
+            return this.seedFuture.join();
+        } catch (CancellationException e) {
+            Atum.LOGGER.warn("The seed has been cancelled.");
+            this.onSeedFutureFail(e);
+            return null;
+        } catch (CompletionException e) {
+            Atum.LOGGER.error("Failed to get seed from the seed provider!", e);
+            this.onSeedFutureFail(e);
             return null;
         }
-        // Note: If a mod ever makes AtumCreateWorldScreens in parallel, the next two lines would cause a race condition.
-        seedProvider.waitForSeed();
-        return seedProvider.getSeed().orElseThrow(() -> new IllegalStateException("No seed found after waiting!"));
+    }
+
+    @Unique
+    private void onSeedFutureFail(Throwable ex) {
+        Atum.cancelAllSeeds();
+        Atum.SEED_FAILURES.add(ex);
+        if (MinecraftClient.getInstance().isOnThread()) {
+            Atum.checkSeedFailures();
+        }
     }
 
     @Unique
@@ -369,5 +422,21 @@ public abstract class CreateWorldScreenMixin extends Screen {
     @Unique
     private boolean isAtum() {
         return (Object) this instanceof AtumCreateWorldScreen;
+    }
+
+    @SuppressWarnings("DataFlowIssue")
+    @Unique
+    private Job getJob() {
+        return ((AtumCreateWorldScreen) (Object) this).getJob();
+    }
+
+    @Unique
+    private boolean isAtumConfig() {
+        return this.isAtum() && this.getJob() == Job.CONFIGURATION;
+    }
+
+    @Unique
+    private boolean isAtumReset() {
+        return this.isAtum() && this.getJob() == Job.CREATION;
     }
 }
