@@ -139,18 +139,24 @@ public abstract class CreateWorldScreenMixin extends Screen {
             return;
         }
 
+        if (this.isAtumReset()) {
+            continueReset();
+            return;
+        }
+
+        ((IMoreOptionsDialog) this.moreOptionsDialog).atum$setSeed(Atum.config.seed);
+
+        this.initConfigScreen();
+    }
+
+    @Unique
+    private void continueReset() {
         String seed = this.getSeed();
         if (seed == null) {
             return;
         }
-        ((IMoreOptionsDialog) this.moreOptionsDialog).atum$setSeed(seed);
 
-        if (this.isAtumReset()) {
-            this.createWorld(seed);
-            return;
-        }
-
-        this.initConfigScreen();
+        this.createWorld(seed);
     }
 
     @Inject(
@@ -323,7 +329,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
                 waitingScreen.addTickActivity(() -> {
                     // Move back to this screen once the seed future is done, however it is done.
                     if (this.seedFuture.isDone()) {
-                        MinecraftClient.getInstance().openScreen(this);
+                        this.continueReset();
                     }
                 });
                 MinecraftClient.getInstance().openScreen(waitingScreen);
@@ -369,6 +375,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
             MinecraftClient.getInstance().createWorld(demoWorldName, MinecraftServer.DEMO_LEVEL_INFO, registryManager, GeneratorOptions.method_31112(registryManager));
             return;
         }
+        ((IMoreOptionsDialog) this.moreOptionsDialog).atum$setSeed(seed);
 
         // micro optimization, vanilla calls the changed listener twice,
         // once on setText and once on setCursorToEnd
