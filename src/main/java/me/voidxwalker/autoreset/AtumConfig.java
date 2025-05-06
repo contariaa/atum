@@ -3,6 +3,7 @@ package me.voidxwalker.autoreset;
 import com.google.gson.JsonObject;
 import me.contaria.speedrunapi.config.SpeedrunConfigContainer;
 import me.contaria.speedrunapi.config.api.SpeedrunConfig;
+import me.contaria.speedrunapi.config.api.SpeedrunConfigParsedMetadata;
 import me.contaria.speedrunapi.config.api.annotations.Config;
 import me.contaria.speedrunapi.util.TextUtil;
 import me.voidxwalker.autoreset.interfaces.ISeedStringHolder;
@@ -156,8 +157,8 @@ public class AtumConfig implements SpeedrunConfig {
     }
 
     @Override
-    public void onLoad(JsonObject jsonObject, int dataVersion) {
-        if (dataVersion < 1) {
+    public void onLoad(JsonObject jsonObject, SpeedrunConfigParsedMetadata metadata) {
+        if (metadata.getDataVersion() < 1) {
             // when Atum 2.0 released, default difficulty was set to NORMAL
             // in Atum 2.1, it was set to EASY and the name was changed to
             // "worldDifficulty" to reset the value in everyone's config
