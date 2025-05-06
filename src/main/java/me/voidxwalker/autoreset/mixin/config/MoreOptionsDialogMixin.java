@@ -45,6 +45,9 @@ public abstract class MoreOptionsDialogMixin implements IMoreOptionsDialog {
 
     @Override
     public void atum$loadAtumConfigurations() {
+        GeneratorType generatorType = Atum.config.generatorType.get();
+        this.generatorType = Optional.of(generatorType);
+
         if (Atum.config.generatorType == AtumConfig.AtumGeneratorType.DEFAULT) {
             if (Atum.config.structures != this.generatorOptions.shouldGenerateStructures()) {
                 this.generatorOptions = this.generatorOptions.toggleGenerateStructures();
@@ -55,8 +58,6 @@ public abstract class MoreOptionsDialogMixin implements IMoreOptionsDialog {
             return;
         }
 
-        GeneratorType generatorType = Atum.config.generatorType.get();
-        this.generatorType = Optional.of(generatorType);
         this.generatorOptions = generatorType.createDefaultOptions(this.registryManager, this.generatorOptions.getSeed(), Atum.config.structures, Atum.config.bonusChest);
 
         if (Atum.config.generatorDetails.isEmpty()) {
