@@ -473,7 +473,7 @@ public class AtumConfig implements SpeedrunConfig {
         if (Atum.isRunning()) {
             throw new IllegalStateException("Cannot configure Atum while it's running.");
         }
-        return AtumCreateWorldScreen.create(parent);
+        return AtumCreateWorldScreen.create(parent, AtumCreateWorldScreen.Job.CONFIGURATION);
     }
 
     @Override
