@@ -29,13 +29,19 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 public class AtumCreateWorldScreen extends CreateWorldScreen {
+    private final Job job;
 
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-    private AtumCreateWorldScreen(MinecraftClient client, @Nullable Screen parent, GeneratorOptionsHolder generatorOptionsHolder, Optional<RegistryKey<WorldPreset>> defaultWorldType, OptionalLong seed, CreateWorldCallback callback) {
+    private AtumCreateWorldScreen(MinecraftClient client, @Nullable Screen parent, GeneratorOptionsHolder generatorOptionsHolder, Optional<RegistryKey<WorldPreset>> defaultWorldType, OptionalLong seed, CreateWorldCallback callback, Job job) {
         super(client, parent, generatorOptionsHolder, defaultWorldType, seed, callback);
+        this.job = job;
     }
 
     public static AtumCreateWorldScreen create(@Nullable Screen parent) {
+        return create(parent, Job.CREATION);
+    }
+
+    public static AtumCreateWorldScreen create(@Nullable Screen parent, Job job) {
         MinecraftClient client = MinecraftClient.getInstance();
 
         Function<SaveLoading.LoadContextSupplierContext, WorldGenSettings> settingsSupplier = context -> new WorldGenSettings(GeneratorOptions.createRandom(), WorldPresets.createDemoOptions(context.worldGenRegistryManager()));
@@ -51,6 +57,15 @@ public class AtumCreateWorldScreen extends CreateWorldScreen {
         }, Util.getMainWorkerExecutor(), client);
         Objects.requireNonNull(completableFuture);
         client.runTasks(completableFuture::isDone);
-        return new AtumCreateWorldScreen(client, parent, completableFuture.join(), Optional.of(WorldPresets.DEFAULT), OptionalLong.empty(), callback);
+        return new AtumCreateWorldScreen(client, parent, completableFuture.join(), Optional.of(WorldPresets.DEFAULT), OptionalLong.empty(), callback, job);
+    }
+
+    public Job getJob() {
+        return job;
+    }
+
+    public enum Job {
+        CREATION,
+        CONFIGURATION
     }
 }
