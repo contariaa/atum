@@ -327,11 +327,9 @@ public abstract class CreateWorldScreenMixin extends Screen {
                 // seed future will resolve to whichever completion won the race.
                 waitingScreen.addCancelActivity(() -> this.seedFuture.cancel(true));
                 waitingScreen.addTickActivity(() -> {
-                    // Move back to a screen with the same future once the seed future is done, however it is done.
+                    // If the seed future is done, rerun init() to either continue to world generation or cancel
                     if (this.seedFuture.isDone()) {
-                        AtumCreateWorldScreen atumCreateWorldScreen = AtumCreateWorldScreen.create(null);
-                        ((CreateWorldScreenMixin) (Object) atumCreateWorldScreen).seedFuture = this.seedFuture;
-                        MinecraftClient.getInstance().setScreen(atumCreateWorldScreen);
+                        this.init();
                     }
                 });
                 MinecraftClient.getInstance().setScreen(waitingScreen);
