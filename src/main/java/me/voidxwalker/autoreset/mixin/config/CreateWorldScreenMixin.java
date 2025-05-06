@@ -152,16 +152,21 @@ public abstract class CreateWorldScreenMixin extends Screen {
         }
 
         if (this.isAtumReset()) {
-            String seed = this.getSeed();
-            if (seed == null) {
-                return;
-            }
-
-            this.createWorld(seed);
+            continueReset();
             return;
         }
 
         this.initConfigScreen();
+    }
+
+    @Unique
+    private void continueReset() {
+        String seed = this.getSeed();
+        if (seed == null) {
+            return;
+        }
+
+        this.createWorld(seed);
     }
 
     @Inject(
@@ -329,7 +334,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
                 waitingScreen.addTickActivity(() -> {
                     // If the seed future is done, rerun init() to either continue to world generation or cancel
                     if (this.seedFuture.isDone()) {
-                        this.init();
+                        this.continueReset();
                     }
                 });
                 MinecraftClient.getInstance().setScreen(waitingScreen);
