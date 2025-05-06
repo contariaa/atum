@@ -132,18 +132,24 @@ public abstract class CreateWorldScreenMixin extends Screen {
             return;
         }
 
+        if (this.isAtumReset()) {
+            continueReset();
+            return;
+        }
+
+        this.seedField.setText(Atum.config.seed);
+
+        this.initConfigScreen();
+    }
+
+    @Unique
+    private void continueReset() {
         String seed = this.getSeed();
         if (seed == null) {
             return;
         }
-        this.seedField.setText(seed);
 
-        if (this.isAtumReset()) {
-            this.createWorld(seed);
-            return;
-        }
-
-        this.initConfigScreen();
+        this.createWorld(seed);
     }
 
     @Inject(
@@ -350,6 +356,8 @@ public abstract class CreateWorldScreenMixin extends Screen {
             MinecraftClient.getInstance().startIntegratedServer(demoWorldName, demoWorldName, MinecraftServer.DEMO_LEVEL_INFO);
             return;
         }
+
+        this.seedField.setText(seed);
 
         // micro optimization, vanilla calls the changed listener twice,
         // once on setText and once on setCursorToEnd
