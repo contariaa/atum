@@ -1,13 +1,16 @@
 package me.voidxwalker.autoreset.api.seedprovider;
 
+import org.jetbrains.annotations.Nullable;
+
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 public interface SeedProvider {
     /**
-     * Gets a seed if a seed is available, otherwise should return empty immediately.
-     * If empty can be returned, waitForSeed and getWaitingScreen should be implemented.
+     * Requests a seed from the seed provider. Can be completed immediately in the implemented method to skip any
+     * waiting screens.
      */
-    Optional<String> getSeed();
+    CompletableFuture<String> requestSeed();
 
     /**
      * Determines whether a set seed should be present in logs, LevelLoadingScreen, and DebugHUD.
@@ -17,17 +20,19 @@ public interface SeedProvider {
     }
 
     /**
-     * Waits for a seed to be available. This should only be called by Atum while using SeedQueue.
+     * Gets the waiting screen. The implemented screen only needs to override the render method. It may also allow for
+     * cancelling of seeds with esc, or it can call cancelWorldCreation through other means such as a button.
      */
-    default void waitForSeed() {
+    default Optional<AtumWaitingScreen> getWaitingScreen() {
+        return Optional.empty();
     }
 
     /**
-     * Gets the waiting screen.
-     * The implemented waiting screen should run the provided continueWorldCreation method once a seed is available, or alternatively cancelWorldCreation.
-     * The implemented waiting screen can also override shouldCloseOnEsc(), returning true to allow cancelling with the 'escape' key.
+     * Runs when an exception or cancellation occurs while resolving the seed future.
+     * This method will be called individually for each exception with no guarantee of timing.
+     * This method is guaranteed to be called from the client thread.
      */
-    default AtumWaitingScreen getWaitingScreen() {
-        throw new IllegalStateException("No waiting screen available!");
+    @SuppressWarnings("unused")
+    default void onFail(@Nullable Throwable ex) {
     }
 }
