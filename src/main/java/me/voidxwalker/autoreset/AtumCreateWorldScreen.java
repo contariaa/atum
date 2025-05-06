@@ -24,13 +24,19 @@ import java.util.OptionalLong;
 import java.util.concurrent.CompletableFuture;
 
 public class AtumCreateWorldScreen extends CreateWorldScreen {
+    private final Job job;
 
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-    private AtumCreateWorldScreen(MinecraftClient client, @Nullable Screen parent, GeneratorOptionsHolder generatorOptionsHolder, Optional<RegistryKey<WorldPreset>> defaultWorldType, OptionalLong seed) {
+    private AtumCreateWorldScreen(MinecraftClient client, @Nullable Screen parent, GeneratorOptionsHolder generatorOptionsHolder, Optional<RegistryKey<WorldPreset>> defaultWorldType, OptionalLong seed, Job job) {
         super(client, parent, generatorOptionsHolder, defaultWorldType, seed);
+        this.job = job;
     }
 
     public static AtumCreateWorldScreen create(@Nullable Screen parent) {
+        return create(parent, Job.CREATION);
+    }
+
+    public static AtumCreateWorldScreen create(@Nullable Screen parent, Job job) {
         MinecraftClient client = MinecraftClient.getInstance();
         client.setScreenAndRender(new MessageScreen(TextUtil.translatable("createWorld.preparing")));
         ResourcePackManager resourcePackManager = new ResourcePackManager(new VanillaDataPackProvider());
@@ -40,6 +46,15 @@ public class AtumCreateWorldScreen extends CreateWorldScreen {
             return new GeneratorOptionsHolder(generatorOptions.worldGenSettings(), combinedDynamicRegistries, dataPackContents, generatorOptions.dataConfiguration());
         }, Util.getMainWorkerExecutor(), client);
         client.runTasks(completableFuture::isDone);
-        return new AtumCreateWorldScreen(client, parent, completableFuture.join(), Optional.of(WorldPresets.DEFAULT), OptionalLong.empty());
+        return new AtumCreateWorldScreen(client, parent, completableFuture.join(), Optional.of(WorldPresets.DEFAULT), OptionalLong.empty(), job);
+    }
+
+    public Job getJob() {
+        return job;
+    }
+
+    public enum Job {
+        CREATION,
+        CONFIGURATION
     }
 }
