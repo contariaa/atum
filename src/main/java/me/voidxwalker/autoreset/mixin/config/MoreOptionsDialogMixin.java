@@ -121,6 +121,7 @@ public abstract class MoreOptionsDialogMixin implements IMoreOptionsDialog {
                     error -> Atum.LOGGER.warn("Failed to serialize flat world generator details! {}", error)
             ).map(e -> {
                 // biome serializes as a bunch of fun facts about the biome instead of the biome's id, so we have to fix that
+                // TODO: Make it so we don't need this or find out more about it
                 JsonObject settings = e.getAsJsonObject();
                 settings.remove("biome");
                 Biome biome = ((FlatChunkGenerator) this.generatorOptions.getChunkGenerator()).getConfig().getBiome();
