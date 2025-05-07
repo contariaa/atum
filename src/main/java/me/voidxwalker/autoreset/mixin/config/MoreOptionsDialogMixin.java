@@ -14,6 +14,7 @@ import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.world.GeneratorType;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
+import net.minecraft.util.dynamic.RegistryOps;
 import net.minecraft.util.registry.*;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.gen.GeneratorOptions;
@@ -63,9 +64,7 @@ public abstract class MoreOptionsDialogMixin implements IMoreOptionsDialog {
         switch (Atum.config.generatorType) {
             case FLAT:
                 FlatChunkGeneratorConfig.CODEC.parse(
-                        // TODO: This always fails with "Not a registry ops"
-                        //       RegistryOps.of(JsonOps.INSTANCE, ?, this.registryManager)
-                        JsonOps.INSTANCE,
+                        RegistryOps.of(JsonOps.INSTANCE, this.registryManager),
                         JsonHelper.deserialize(Atum.config.generatorDetails)
                 ).resultOrPartial(
                         error -> Atum.LOGGER.warn("Failed to deserialize flat world generator details! {}", error)
@@ -107,15 +106,13 @@ public abstract class MoreOptionsDialogMixin implements IMoreOptionsDialog {
         Atum.config.bonusChest = this.generatorOptions.hasBonusChest();
 
         Atum.config.generatorDetails = switch (Atum.config.generatorType) {
-            case FLAT ->
-                    // TODO: This now also fails with "Can't access registry"
-                    FlatChunkGeneratorConfig.CODEC.encode(
-                            ((FlatChunkGenerator) this.generatorOptions.getChunkGenerator()).getConfig(),
-                            JsonOps.INSTANCE,
-                            new JsonObject()
-                    ).resultOrPartial(
-                            error -> Atum.LOGGER.warn("Failed to serialize flat world generator details! {}", error)
-                    ).map(JsonElement::toString).orElse("");
+            case FLAT -> FlatChunkGeneratorConfig.CODEC.encode(
+                    ((FlatChunkGenerator) this.generatorOptions.getChunkGenerator()).getConfig(),
+                    RegistryOps.of(JsonOps.INSTANCE, this.registryManager),
+                    new JsonObject()
+            ).resultOrPartial(
+                    error -> Atum.LOGGER.warn("Failed to serialize flat world generator details! {}", error)
+            ).map(JsonElement::toString).orElse("");
             case SINGLE_BIOME_SURFACE ->
                     this.generatorOptions.getChunkGenerator().getBiomeSource().getBiomes().iterator().next().getKey()
                             .map(RegistryKey::getValue)
