@@ -21,6 +21,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public class AtumConfig implements SpeedrunConfig {
     @Config.Ignored
@@ -144,7 +145,25 @@ public class AtumConfig implements SpeedrunConfig {
             debugText.add(seedLine);
         }
 
-        debugText.addAll(this.getIllegalSettingsStrings());
+        if (!this.gameMode.equals("survival") && !this.gameMode.equals("hardcore")) {
+            debugText.add("Game Mode: " + this.gameMode.substring(0, 1).toUpperCase(Locale.ROOT) + this.gameMode.substring(1).toLowerCase(Locale.ROOT));
+        }
+        if (this.cheatsEnabled) {
+            debugText.add("Allow Cheats: ON");
+        }
+        if (!this.structures) {
+            debugText.add("Generate Structures: OFF");
+        }
+        if (this.bonusChest) {
+            debugText.add("Bonus Chest: ON");
+        }
+        if (this.generatorType != AtumGeneratorType.DEFAULT) {
+            String generatorInformation = this.generatorType.getName();
+            if (!this.generatorDetails.isEmpty()) {
+                generatorInformation += " (" + this.generatorDetails.hashCode() + ")";
+            }
+            debugText.add("World Type: " + generatorInformation);
+        }
 
         return debugText;
     }
@@ -198,21 +217,27 @@ public class AtumConfig implements SpeedrunConfig {
 
     @SuppressWarnings("unused")
     public enum AtumGeneratorType {
-        DEFAULT(GeneratorTypeAccessor.atum$DEFAULT()),
-        FLAT(GeneratorTypeAccessor.atum$FLAT()),
-        LARGE_BIOMES(GeneratorTypeAccessor.atum$LARGE_BIOMES()),
-        AMPLIFIED(GeneratorTypeAccessor.atum$AMPLIFIED()),
-        SINGLE_BIOME_SURFACE(GeneratorTypeAccessor.atum$BUFFET()),
-        DEBUG(GeneratorTypeAccessor.atum$DEBUG_ALL_BLOCK_STATES());
+        DEFAULT(GeneratorTypeAccessor.atum$DEFAULT(), "Default"),
+        FLAT(GeneratorTypeAccessor.atum$FLAT(), "Superflat"),
+        LARGE_BIOMES(GeneratorTypeAccessor.atum$LARGE_BIOMES(), "Large Biomes"),
+        AMPLIFIED(GeneratorTypeAccessor.atum$AMPLIFIED(), "AMPLIFIED"),
+        SINGLE_BIOME_SURFACE(GeneratorTypeAccessor.atum$BUFFET(), "Buffet"),
+        DEBUG(GeneratorTypeAccessor.atum$DEBUG_ALL_BLOCK_STATES(), "Debug Mode");
 
         private final LevelGeneratorType generatorType;
+        private final String name;
 
-        AtumGeneratorType(LevelGeneratorType generatorType) {
+        AtumGeneratorType(LevelGeneratorType generatorType, String name) {
             this.generatorType = generatorType;
+            this.name = name;
         }
 
         public LevelGeneratorType get() {
             return this.generatorType;
+        }
+
+        public String getName() {
+            return this.name;
         }
 
         public static @Nullable AtumGeneratorType from(LevelGeneratorType generatorType) {
