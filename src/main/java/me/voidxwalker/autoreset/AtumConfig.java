@@ -35,10 +35,7 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class AtumConfig implements SpeedrunConfig {
@@ -47,8 +44,6 @@ public class AtumConfig implements SpeedrunConfig {
 
     public CreateWorldScreen.Mode gameMode = CreateWorldScreen.Mode.SURVIVAL;
     public boolean structures = true;
-    // renamed from difficulty to worldDifficulty in 2.1
-    // 2.0 set the default to NORMAL, causing people to play on normal instead of easy because they weren't used to it
     public Difficulty difficulty = Difficulty.EASY;
     @Config.Strings.MaxChars(32)
     public String seed = "";
@@ -292,13 +287,7 @@ public class AtumConfig implements SpeedrunConfig {
             texts.add(TextUtil.translatable("selectWorld.gameRules").append(": Modified"));
         }
         if (!this.isDefaultDataPackSettings(this.dataPackSettings)) {
-            String dataPackInformation;
-            if (this.dataPackMismatch) {
-                dataPackInformation = "? | ?";
-            } else {
-                dataPackInformation = this.filterOnlyFileDataPacks(this.dataPackSettings.getEnabled()).size() + " | " + this.filterOnlyFileDataPacks(this.dataPackSettings.getDisabled()).size();
-            }
-            texts.add(TextUtil.translatable("selectWorld.dataPacks").append(": " + dataPackInformation));
+            texts.add(TextUtil.translatable("selectWorld.dataPacks").append(": Modified"));
         }
         if (this.demoMode) {
             texts.add(TextUtil.translatable("atum.config.demoMode", ScreenTexts.ON));
@@ -359,8 +348,39 @@ public class AtumConfig implements SpeedrunConfig {
             debugText.add(seedLine);
         }
 
-        for (Text text : this.getIllegalSettingsTexts()) {
-            debugText.add(text.getString());
+        if (this.gameMode != CreateWorldScreen.Mode.SURVIVAL && this.gameMode != CreateWorldScreen.Mode.HARDCORE) {
+            debugText.add("Game Mode: " + this.gameMode.name().substring(0, 1).toUpperCase(Locale.ROOT) + this.gameMode.name().substring(1).toLowerCase(Locale.ROOT));
+        }
+        if (this.cheatsEnabled) {
+            debugText.add("Allow Cheats: ON");
+        }
+        if (!this.structures) {
+            debugText.add("Generate Structures: OFF");
+        }
+        if (this.bonusChest) {
+            debugText.add("Bonus Chest: ON");
+        }
+        if (this.generatorType != AtumGeneratorType.DEFAULT) {
+            String generatorInformation = this.generatorType.getName();
+            if (!this.generatorDetails.isEmpty()) {
+                generatorInformation += " (" + this.generatorDetails.hashCode() + ")";
+            }
+            debugText.add("World Type: " + generatorInformation);
+        }
+        if (this.modifiedGameRules) {
+            debugText.add("Game Rules: Modified");
+        }
+        if (!this.isDefaultDataPackSettings(this.dataPackSettings)) {
+            String dataPackInformation;
+            if (this.dataPackMismatch) {
+                dataPackInformation = "? | ?";
+            } else {
+                dataPackInformation = this.filterOnlyFileDataPacks(this.dataPackSettings.getEnabled()).size() + " | " + this.filterOnlyFileDataPacks(this.dataPackSettings.getDisabled()).size();
+            }
+            debugText.add("Data Packs: " + dataPackInformation);
+        }
+        if (this.demoMode) {
+            debugText.add("Demo Mode: ON");
         }
 
         return debugText;
@@ -415,21 +435,27 @@ public class AtumConfig implements SpeedrunConfig {
 
     @SuppressWarnings("unused")
     public enum AtumGeneratorType {
-        DEFAULT(GeneratorTypeAccessor.atum$DEFAULT()),
-        FLAT(GeneratorTypeAccessor.atum$FLAT()),
-        LARGE_BIOMES(GeneratorTypeAccessor.atum$LARGE_BIOMES()),
-        AMPLIFIED(GeneratorTypeAccessor.atum$AMPLIFIED()),
-        SINGLE_BIOME_SURFACE(GeneratorTypeAccessor.atum$SINGLE_BIOME_SURFACE()),
-        DEBUG(GeneratorTypeAccessor.atum$DEBUG_ALL_BLOCK_STATES());
+        DEFAULT(GeneratorTypeAccessor.atum$DEFAULT(), "Default"),
+        FLAT(GeneratorTypeAccessor.atum$FLAT(), "Superflat"),
+        LARGE_BIOMES(GeneratorTypeAccessor.atum$LARGE_BIOMES(), "Large Biomes"),
+        AMPLIFIED(GeneratorTypeAccessor.atum$AMPLIFIED(), "AMPLIFIED"),
+        SINGLE_BIOME_SURFACE(GeneratorTypeAccessor.atum$SINGLE_BIOME_SURFACE(), "Single Biome"),
+        DEBUG(GeneratorTypeAccessor.atum$DEBUG_ALL_BLOCK_STATES(), "Debug Mode");
 
         private final GeneratorType generatorType;
+        private final String name;
 
-        AtumGeneratorType(GeneratorType generatorType) {
+        AtumGeneratorType(GeneratorType generatorType, String name) {
             this.generatorType = generatorType;
+            this.name = name;
         }
 
         public GeneratorType get() {
             return this.generatorType;
+        }
+
+        public String getName() {
+            return this.name;
         }
 
         public static @Nullable AtumGeneratorType from(GeneratorType generatorType) {
