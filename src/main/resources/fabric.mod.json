@@ -16,6 +16,10 @@
     "contaria",
     "tildejustin"
   ],
+  "contact": {
+    "sources": "https://github.com/contariaa/atum",
+    "issues": "https://github.com/contariaa/atum/issues"
+  },
   "license": "MIT",
   "icon": "assets/atum/icon.png",
   "environment": "client",
