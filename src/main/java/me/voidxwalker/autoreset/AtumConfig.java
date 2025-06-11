@@ -49,8 +49,6 @@ public class AtumConfig implements SpeedrunConfig {
 
     public WorldCreator.Mode gameMode = WorldCreator.Mode.SURVIVAL;
     public boolean structures = true;
-    // renamed from difficulty to worldDifficulty in 2.1
-    // 2.0 set the default to NORMAL, causing people to play on normal instead of easy because they weren't used to it
     public Difficulty difficulty = Difficulty.EASY;
     @Config.Strings.MaxChars(32)
     public String seed = "";
@@ -357,13 +355,7 @@ public class AtumConfig implements SpeedrunConfig {
             texts.add(TextUtil.translatable("selectWorld.gameRules").append(": Modified"));
         }
         if (!this.isDefaultDataPackSettings(this.dataPackSettings)) {
-            String dataPackInformation;
-            if (this.dataPackMismatch) {
-                dataPackInformation = "? | ?";
-            } else {
-                dataPackInformation = this.filterOnlyFileDataPacks(this.dataPackSettings.getEnabled()).size() + " | " + this.filterOnlyFileDataPacks(this.dataPackSettings.getDisabled()).size();
-            }
-            texts.add(TextUtil.translatable("selectWorld.dataPacks").append(": " + dataPackInformation));
+            texts.add(TextUtil.translatable("selectWorld.dataPacks").append(": Modified"));
         }
         if (!this.featureSet.equals(FeatureFlags.DEFAULT_ENABLED_FEATURES)) {
             texts.add(TextUtil.translatable("selectWorld.experiments").append(": Modified"));
@@ -428,8 +420,42 @@ public class AtumConfig implements SpeedrunConfig {
             debugText.add(seedLine);
         }
 
-        for (Text text : this.getIllegalSettingsTexts()) {
-            debugText.add(text.getString());
+        if (this.gameMode != WorldCreator.Mode.SURVIVAL && this.gameMode != WorldCreator.Mode.HARDCORE) {
+            debugText.add("Game Mode: " + this.gameMode.name().substring(0, 1).toUpperCase(Locale.ROOT) + this.gameMode.name().substring(1).toLowerCase(Locale.ROOT));
+        }
+        if (this.cheatsEnabled) {
+            debugText.add("Allow Commands: ON");
+        }
+        if (!this.structures) {
+            debugText.add("Generate Structures: OFF");
+        }
+        if (this.bonusChest) {
+            debugText.add("Bonus Chest: ON");
+        }
+        if (this.generatorType != AtumWorldType.DEFAULT) {
+            String generatorInformation = this.generatorType.getName();
+            if (!this.generatorDetails.isEmpty()) {
+                generatorInformation += " (" + this.generatorDetails.hashCode() + ")";
+            }
+            debugText.add("World Type: " + generatorInformation);
+        }
+        if (this.modifiedGameRules) {
+            debugText.add("Game Rules: Modified");
+        }
+        if (!this.isDefaultDataPackSettings(this.dataPackSettings)) {
+            String dataPackInformation;
+            if (this.dataPackMismatch) {
+                dataPackInformation = "? | ?";
+            } else {
+                dataPackInformation = this.filterOnlyFileDataPacks(this.dataPackSettings.getEnabled()).size() + " | " + this.filterOnlyFileDataPacks(this.dataPackSettings.getDisabled()).size();
+            }
+            debugText.add("Data Packs: " + dataPackInformation);
+        }
+        if (!this.featureSet.equals(FeatureFlags.DEFAULT_ENABLED_FEATURES)) {
+            debugText.add("Experiments: Modified");
+        }
+        if (this.demoMode) {
+            debugText.add("Demo Mode: ON");
         }
 
         return debugText;
@@ -484,21 +510,27 @@ public class AtumConfig implements SpeedrunConfig {
 
     @SuppressWarnings("unused")
     public enum AtumWorldType {
-        DEFAULT(WorldPresets.DEFAULT),
-        FLAT(WorldPresets.FLAT),
-        LARGE_BIOMES(WorldPresets.LARGE_BIOMES),
-        AMPLIFIED(WorldPresets.AMPLIFIED),
-        SINGLE_BIOME_SURFACE(WorldPresets.SINGLE_BIOME_SURFACE),
-        DEBUG(WorldPresets.DEBUG_ALL_BLOCK_STATES);
+        DEFAULT(WorldPresets.DEFAULT, "Default"),
+        FLAT(WorldPresets.FLAT, "Superflat"),
+        LARGE_BIOMES(WorldPresets.LARGE_BIOMES, "Large Biomes"),
+        AMPLIFIED(WorldPresets.AMPLIFIED, "AMPLIFIED"),
+        SINGLE_BIOME_SURFACE(WorldPresets.SINGLE_BIOME_SURFACE, "Single Biome"),
+        DEBUG(WorldPresets.DEBUG_ALL_BLOCK_STATES, "Debug Mode");
 
         private final RegistryKey<WorldPreset> worldPreset;
+        private final String name;
 
-        AtumWorldType(RegistryKey<WorldPreset> worldPreset) {
+        AtumWorldType(RegistryKey<WorldPreset> worldPreset, String name) {
             this.worldPreset = worldPreset;
+            this.name = name;
         }
 
         public WorldCreator.WorldType get(Registry<WorldPreset> registry) {
             return new WorldCreator.WorldType(registry.getEntry(registry.get(this.worldPreset)));
+        }
+
+        public String getName() {
+            return this.name;
         }
 
         public static @Nullable AtumWorldType from(WorldCreator.WorldType worldType) {
