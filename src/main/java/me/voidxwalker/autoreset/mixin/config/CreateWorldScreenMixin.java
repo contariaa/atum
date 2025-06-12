@@ -111,7 +111,6 @@ public abstract class CreateWorldScreenMixin extends Screen {
         }
 
         this.load();
-        this.initDataPacks();
     }
 
     @WrapWithCondition(
@@ -140,8 +139,9 @@ public abstract class CreateWorldScreenMixin extends Screen {
             return;
         }
 
+        this.initDataPacks();
         if (this.isAtumReset()) {
-            continueReset();
+            this.continueReset();
             return;
         }
 
