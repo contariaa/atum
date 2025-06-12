@@ -135,7 +135,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
         }
 
         if (this.isAtumReset()) {
-            continueReset();
+            this.continueReset();
             return;
         }
 
