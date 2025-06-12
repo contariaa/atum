@@ -104,7 +104,6 @@ public abstract class CreateWorldScreenMixin extends Screen {
         }
 
         this.load();
-        this.initDataPacks();
     }
 
     @ModifyArg(
@@ -155,8 +154,9 @@ public abstract class CreateWorldScreenMixin extends Screen {
             return;
         }
 
+        this.initDataPacks();
         if (this.isAtumReset()) {
-            continueReset();
+            this.continueReset();
             return;
         }
 
