@@ -53,7 +53,7 @@ public class AtumConfig implements SpeedrunConfig {
     @Config.Hide
     public boolean bonusChest = false;
     @Config.Hide
-    public boolean cheatsEnabled;
+    public boolean cheatsEnabled = false;
     @Config.Hide
     public AtumGeneratorType generatorType = AtumGeneratorType.DEFAULT;
     @Config.Hide
@@ -67,8 +67,8 @@ public class AtumConfig implements SpeedrunConfig {
 
     @SuppressWarnings("unused") // for button
     public Void worldGeneration;
-    public boolean demoMode;
-    public boolean hotkeyOnly;
+    public boolean demoMode = false;
+    public boolean hotkeyOnly = false;
 
     @Config.Hide
     @SuppressWarnings({"unused", "FieldCanBeLocal"}) // saved to config for PaceMan
