@@ -258,6 +258,10 @@ public class AtumConfig implements SpeedrunConfig {
                     .fromJson((option, config_, configStorage, optionField, jsonElement) -> {})
                     .toJson((option, config_, configStorage, optionField) -> null)
                     .createWidget((option, config_, configStorage, optionField) -> new ButtonWidget(0, 0, 150, 20, TextUtil.translatable("atum.menu.configure"), button -> {
+                        // isAvailable() already takes care of this, but because it's so important we do another check just to be completely sure Atum is not running when the player opens the Atum config
+                        if (Atum.isRunning()) {
+                            throw new IllegalStateException("Cannot configure Atum while it's running.");
+                        }
                         MinecraftClient client = MinecraftClient.getInstance();
                         client.openScreen(new AtumCreateWorldScreen(client.currentScreen, AtumCreateWorldScreen.Job.CONFIGURATION));
                     }))
