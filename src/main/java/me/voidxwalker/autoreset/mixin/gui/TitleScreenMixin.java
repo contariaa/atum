@@ -33,9 +33,11 @@ public abstract class TitleScreenMixin extends Screen {
             at = @At("TAIL")
     )
     private void init(CallbackInfo info) {
-        if (Atum.isRunning()) {
+        if (Atum.isRunning() && !Atum.config.hotkeyOnly) {
             Atum.scheduleReset();
             return;
+        } else if (!Atum.isResetScheduled()) {
+            Atum.stopRunning();
         }
 
         this.addButton(new ButtonWidget(this.width / 2 - 124, this.height / 4 + 48, 20, 20, LiteralText.EMPTY, button -> {

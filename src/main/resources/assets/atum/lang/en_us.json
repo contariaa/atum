@@ -10,5 +10,6 @@
   "atum.menu.legal_settings.reset": "Reset Settings",
 
   "speedrunapi.config.atum.option.demoMode": "Demo Mode",
+  "speedrunapi.config.atum.option.hotkeyOnly": "Hotkey Only Mode",
   "speedrunapi.config.atum.option.worldGeneration": "World Generation"
 }
