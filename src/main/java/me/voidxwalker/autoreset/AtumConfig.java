@@ -270,6 +270,11 @@ public class AtumConfig implements SpeedrunConfig {
         return SpeedrunConfig.super.parseField(field, config, idPrefix);
     }
 
+    @Override
+    public void preSave() {
+        updateHasLegalSettings();
+    }
+
     public boolean updateHasLegalSettings() {
         return this.hasLegalSettings = (this.gameMode == CreateWorldScreen.Mode.SURVIVAL || this.gameMode == CreateWorldScreen.Mode.HARDCORE) &&
                 this.structures &&
@@ -317,7 +322,7 @@ public class AtumConfig implements SpeedrunConfig {
             texts.add(TextUtil.translatable("selectWorld.dataPacks").append(": Modified"));
         }
         if (this.demoMode) {
-            texts.add(TextUtil.translatable("atum.config.demoMode", ScreenTexts.ON));
+            texts.add(TextUtil.translatable("speedrunapi.config.atum.option.demoMode", ScreenTexts.ON));
         }
         return texts;
     }
