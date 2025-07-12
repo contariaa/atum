@@ -16,9 +16,9 @@ import me.voidxwalker.autoreset.mixin.access.CreateWorldScreen$ModeAccessor;
 import me.voidxwalker.autoreset.mixin.access.GeneratorTypeAccessor;
 import me.voidxwalker.autoreset.mixin.access.RuleAccessor;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ScreenTexts;
 import net.minecraft.client.gui.screen.world.CreateWorldScreen;
+import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.world.GeneratorType;
 import net.minecraft.resource.DataPackSettings;
 import net.minecraft.server.MinecraftServer;
@@ -28,7 +28,6 @@ import net.minecraft.world.Difficulty;
 import net.minecraft.world.GameRules;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.mutable.MutableBoolean;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
@@ -42,22 +41,35 @@ public class AtumConfig implements SpeedrunConfig {
     @Config.Ignored
     private SpeedrunConfigContainer<?> container;
 
+    @Config.Hide
     public CreateWorldScreen.Mode gameMode = CreateWorldScreen.Mode.SURVIVAL;
+    @Config.Hide
     public boolean structures = true;
+    @Config.Hide
     public Difficulty difficulty = Difficulty.EASY;
+    @Config.Hide
     @Config.Strings.MaxChars(32)
     public String seed = "";
+    @Config.Hide
     public boolean bonusChest = false;
+    @Config.Hide
     public boolean cheatsEnabled;
+    @Config.Hide
     public AtumGeneratorType generatorType = AtumGeneratorType.DEFAULT;
+    @Config.Hide
     public String generatorDetails = "";
+    @Config.Hide
     @Config.Access(setter = "setGameRules")
     public GameRules gameRules = new GameRules();
+    @Config.Hide
     @Config.Access(setter = "setDataPackSettings")
     public DataPackSettings dataPackSettings = DataPackSettings.SAFE_MODE;
 
+    @SuppressWarnings("unused") // for button
+    public Void worldGeneration;
     public boolean demoMode;
 
+    @Config.Hide
     @SuppressWarnings({"unused", "FieldCanBeLocal"}) // saved to config for PaceMan
     private boolean hasLegalSettings;
 
@@ -240,6 +252,16 @@ public class AtumConfig implements SpeedrunConfig {
                     .toJson(((option, config_, configStorage, optionField) -> this.serializeDataPackSettings(option.get())))
                     .build();
         }
+        if ("worldGeneration".equals(field.getName())) {
+            return new SpeedrunConfigAPI.CustomOption.Builder<>(this, this, field, idPrefix)
+                    .fromJson((option, config_, configStorage, optionField, jsonElement) -> {})
+                    .toJson((option, config_, configStorage, optionField) -> null)
+                    .createWidget((option, config_, configStorage, optionField) -> new ButtonWidget(0, 0, 150, 20, TextUtil.translatable("atum.menu.configure"), button -> {
+                        MinecraftClient client = MinecraftClient.getInstance();
+                        client.openScreen(new AtumCreateWorldScreen(client.currentScreen, AtumCreateWorldScreen.Job.CONFIGURATION));
+                    }))
+                    .build();
+        }
         return SpeedrunConfig.super.parseField(field, config, idPrefix);
     }
 
@@ -417,15 +439,6 @@ public class AtumConfig implements SpeedrunConfig {
     @Override
     public String modID() {
         return "atum";
-    }
-
-    @Override
-    public @NotNull Screen createConfigScreen(Screen parent) {
-        // isAvailable() already takes care of this, but because it's so important we do another check just to be completely sure Atum is not running when the player opens the Atum config
-        if (Atum.isRunning()) {
-            throw new IllegalStateException("Cannot configure Atum while it's running.");
-        }
-        return new AtumCreateWorldScreen(parent, AtumCreateWorldScreen.Job.CONFIGURATION);
     }
 
     @Override

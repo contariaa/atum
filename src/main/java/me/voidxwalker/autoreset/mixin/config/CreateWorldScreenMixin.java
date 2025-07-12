@@ -14,7 +14,6 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.screen.ConfirmScreen;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.ScreenTexts;
 import net.minecraft.client.gui.screen.world.CreateWorldScreen;
 import net.minecraft.client.gui.screen.world.MoreOptionsDialog;
 import net.minecraft.client.gui.widget.AbstractButtonWidget;
@@ -76,8 +75,6 @@ public abstract class CreateWorldScreenMixin extends Screen {
     @Final
     public MoreOptionsDialog moreOptionsDialog;
     @Shadow
-    private boolean moreOptionsOpen;
-    @Shadow
     private TextFieldWidget levelNameField;
     @Shadow
     private ButtonWidget createLevelButton;
@@ -86,8 +83,6 @@ public abstract class CreateWorldScreenMixin extends Screen {
 
     @Unique
     private CompletableFuture<String> seedFuture;
-    @Unique
-    private AbstractButtonWidget demoModeButton;
 
     @Shadow
     protected abstract void updateSaveFolderName();
@@ -168,9 +163,6 @@ public abstract class CreateWorldScreenMixin extends Screen {
             this.levelNameField.setText(Atum.config.attemptTracker.getWorldName(
                     ((IMoreOptionsDialog) this.moreOptionsDialog).atum$isSetSeed() ? AttemptTracker.Type.SSG : AttemptTracker.Type.RSG
             ));
-            if (this.demoModeButton != null) {
-                this.demoModeButton.visible = moreOptionsOpen;
-            }
         }
     }
 
@@ -405,12 +397,6 @@ public abstract class CreateWorldScreenMixin extends Screen {
 
         this.dataPacksButton.active = this.dataPackTempDir != null;
         this.createLevelButton.setMessage(TextUtil.translatable("gui.done"));
-        this.demoModeButton = this.addButton(new ButtonWidget(
-                this.width / 2 + 5, 151, 150, 20,
-                TextUtil.translatable("atum.config.demoMode", ScreenTexts.getToggleText(Atum.config.demoMode)),
-                button -> button.setMessage(TextUtil.translatable("atum.config.demoMode", ScreenTexts.getToggleText(Atum.config.demoMode = !Atum.config.demoMode)))
-        ));
-        this.demoModeButton.visible = this.moreOptionsOpen;
     }
 
     @Unique

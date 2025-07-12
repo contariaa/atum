@@ -2,11 +2,13 @@
   "key.categories.atum": "Atum",
   "Create New World": "Create New World",
 
+  "atum.menu.configure": "Configure...",
   "atum.menu.stop_resets": "Stop Resets & Quit",
   "atum.menu.open_config": "Open Config",
   "atum.menu.legal_settings.warning": "You are using settings that are not allowed for Any% speedruns!",
   "atum.menu.legal_settings.confirm": "Confirm",
   "atum.menu.legal_settings.reset": "Reset Settings",
 
-  "atum.config.demoMode": "Demo Mode: %s"
+  "speedrunapi.config.atum.option.demoMode": "Demo Mode",
+  "speedrunapi.config.atum.option.worldGeneration": "World Generation"
 }
