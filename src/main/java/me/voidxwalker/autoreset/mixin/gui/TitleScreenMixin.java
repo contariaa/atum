@@ -42,7 +42,7 @@ public abstract class TitleScreenMixin extends Screen {
 
         this.addButton(new ButtonWidget(this.width / 2 - 124, this.height / 4 + 48, 20, 20, LiteralText.EMPTY, button -> {
             if (Screen.hasShiftDown()) {
-                MinecraftClient.getInstance().openScreen(new AtumCreateWorldScreen(this, AtumCreateWorldScreen.Job.CONFIGURATION));
+                MinecraftClient.getInstance().openScreen(new AtumCreateWorldScreen(this, AtumCreateWorldScreen.Job.CONFIGURATION, true));
                 return;
             }
             Atum.scheduleReset();

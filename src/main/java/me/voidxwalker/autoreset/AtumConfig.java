@@ -16,6 +16,8 @@ import me.voidxwalker.autoreset.mixin.access.CreateWorldScreen$ModeAccessor;
 import me.voidxwalker.autoreset.mixin.access.GeneratorTypeAccessor;
 import me.voidxwalker.autoreset.mixin.access.RuleAccessor;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.screen.ConfirmScreen;
+import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ScreenTexts;
 import net.minecraft.client.gui.screen.world.CreateWorldScreen;
 import net.minecraft.client.gui.widget.ButtonWidget;
@@ -263,7 +265,7 @@ public class AtumConfig implements SpeedrunConfig {
                             throw new IllegalStateException("Cannot configure Atum while it's running.");
                         }
                         MinecraftClient client = MinecraftClient.getInstance();
-                        client.openScreen(new AtumCreateWorldScreen(client.currentScreen, AtumCreateWorldScreen.Job.CONFIGURATION));
+                        client.openScreen(new AtumCreateWorldScreen(client.currentScreen, AtumCreateWorldScreen.Job.CONFIGURATION, false));
                     }))
                     .build();
         }
@@ -272,7 +274,26 @@ public class AtumConfig implements SpeedrunConfig {
 
     @Override
     public void preSave() {
+        // fallback in case the player atum resets from the config screen and onConfigScreenClose isn't called
         updateHasLegalSettings();
+    }
+
+    @Override
+    public void onConfigScreenClose(Screen current, Screen parent) {
+        if (updateHasLegalSettings()) {
+            return;
+        }
+        MinecraftClient.getInstance().openScreen(this.createConfirmScreen(parent));
+    }
+
+    public ConfirmScreen createConfirmScreen(Screen parent) {
+        return new ConfirmScreen(confirm -> {
+            if (!confirm) {
+                Atum.config.resetToLegalSettings();
+            }
+            Atum.config.save();
+            MinecraftClient.getInstance().openScreen(parent);
+        }, TextUtil.translatable("atum.menu.legal_settings.warning"), Atum.config.getIllegalSettingsWarning(), TextUtil.translatable("atum.menu.legal_settings.confirm"), TextUtil.translatable("atum.menu.legal_settings.reset"));
     }
 
     public boolean updateHasLegalSettings() {

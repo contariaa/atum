@@ -6,18 +6,24 @@ import org.jetbrains.annotations.Nullable;
 
 public class AtumCreateWorldScreen extends CreateWorldScreen {
     private final Job job;
+    private final boolean shouldShowLegalWarning;
 
     public AtumCreateWorldScreen(@Nullable Screen parent) {
-        this(parent, Job.CREATION);
+        this(parent, Job.CREATION, false);
     }
 
-    public AtumCreateWorldScreen(@Nullable Screen parent, Job job) {
+    public AtumCreateWorldScreen(@Nullable Screen parent, Job job, boolean shouldShowLegalWarning ) {
         super(parent);
         this.job = job;
+        this.shouldShowLegalWarning = shouldShowLegalWarning;
     }
 
     public Job getJob() {
         return this.job;
+    }
+
+    public boolean shouldShowLegalWarning() {
+        return this.shouldShowLegalWarning;
     }
 
     public enum Job {

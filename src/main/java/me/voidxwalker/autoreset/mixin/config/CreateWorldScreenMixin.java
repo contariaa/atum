@@ -12,7 +12,6 @@ import me.voidxwalker.autoreset.api.seedprovider.SeedProvider;
 import me.voidxwalker.autoreset.interfaces.IMoreOptionsDialog;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.screen.ConfirmScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.world.CreateWorldScreen;
 import net.minecraft.client.gui.screen.world.MoreOptionsDialog;
@@ -412,18 +411,12 @@ public abstract class CreateWorldScreenMixin extends Screen {
 
     @Unique
     private void closeConfigScreen() {
-        if (Atum.config.updateHasLegalSettings()) {
+        if (Atum.config.updateHasLegalSettings() || !this.shouldShowLegalWarning()) {
             Atum.config.save();
             MinecraftClient.getInstance().openScreen(this.parent);
             return;
         }
-        MinecraftClient.getInstance().openScreen(new ConfirmScreen(confirm -> {
-            if (!confirm) {
-                Atum.config.resetToLegalSettings();
-            }
-            Atum.config.save();
-            MinecraftClient.getInstance().openScreen(this.parent);
-        }, TextUtil.translatable("atum.menu.legal_settings.warning"), Atum.config.getIllegalSettingsWarning(), TextUtil.translatable("atum.menu.legal_settings.confirm"), TextUtil.translatable("atum.menu.legal_settings.reset")));
+        this.client.openScreen(Atum.config.createConfirmScreen(this.parent));
     }
 
     @Unique
@@ -436,6 +429,13 @@ public abstract class CreateWorldScreenMixin extends Screen {
     private Job getJob() {
         return ((AtumCreateWorldScreen) (Object) this).getJob();
     }
+
+    @SuppressWarnings("DataFlowIssue")
+    @Unique
+    private boolean shouldShowLegalWarning() {
+        return ((AtumCreateWorldScreen) (Object) this).shouldShowLegalWarning();
+    }
+
 
     @Unique
     private boolean isAtumConfig() {
