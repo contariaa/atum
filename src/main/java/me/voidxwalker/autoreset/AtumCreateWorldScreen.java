@@ -9,10 +9,14 @@ public class AtumCreateWorldScreen extends CreateWorldScreen {
     private final boolean shouldShowLegalWarning;
 
     public AtumCreateWorldScreen(@Nullable Screen parent) {
-        this(parent, Job.CREATION, false);
+        this(parent, Job.CREATION);
     }
 
-    public AtumCreateWorldScreen(@Nullable Screen parent, Job job, boolean shouldShowLegalWarning ) {
+    public AtumCreateWorldScreen(@Nullable Screen parent, Job job) {
+        this(parent, job, false);
+    }
+
+    public AtumCreateWorldScreen(@Nullable Screen parent, Job job, boolean shouldShowLegalWarning) {
         super(parent);
         this.job = job;
         this.shouldShowLegalWarning = shouldShowLegalWarning;
