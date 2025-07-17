@@ -11,6 +11,8 @@
 
   "speedrunapi.config.atum.option.demoMode": "Demo Mode",
   "speedrunapi.config.atum.option.hotkeyOnly": "Hotkey Only Mode",
+  "speedrunapi.config.atum.option.hotkeyOnly.description": "If enabled, leaving the world normally will not cause a reset.",
   "speedrunapi.config.atum.option.safeHotkey": "Safe Hotkey",
+  "speedrunapi.config.atum.option.safeHotkey.description": "If enabled, the atum hotkey will not reset if pressed when a text field is focused.",
   "speedrunapi.config.atum.option.worldGeneration": "World Generation"
 }
