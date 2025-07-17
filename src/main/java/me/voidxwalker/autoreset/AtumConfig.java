@@ -286,7 +286,7 @@ public class AtumConfig implements SpeedrunConfig {
             return;
         }
         if (Atum.config.illegalSettingsWarning) {
-        MinecraftClient.getInstance().openScreen(this.createConfirmScreen(parent));
+            MinecraftClient.getInstance().openScreen(this.createConfirmScreen(parent));
         }
     }
 

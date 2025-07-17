@@ -416,9 +416,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
             MinecraftClient.getInstance().openScreen(this.parent);
             return;
         }
-        if (Atum.config.illegalSettingsWarning) {
-            this.client.openScreen(Atum.config.createConfirmScreen(this.parent));
-        }
+        this.client.openScreen(Atum.config.illegalSettingsWarning ? Atum.config.createConfirmScreen(this.parent) : this.parent);
     }
 
     @Unique
