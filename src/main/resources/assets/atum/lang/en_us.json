@@ -11,5 +11,6 @@
 
   "speedrunapi.config.atum.option.demoMode": "Demo Mode",
   "speedrunapi.config.atum.option.hotkeyOnly": "Hotkey Only Mode",
+  "speedrunapi.config.atum.option.safeReset": "Safe Hotkey",
   "speedrunapi.config.atum.option.worldGeneration": "World Generation"
 }

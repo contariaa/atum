@@ -145,7 +145,7 @@ public class Atum implements ClientModInitializer {
         if (curr instanceof ControlsOptionsScreen && ((ControlsOptionsScreen) curr).focusedBinding == Atum.resetKey) {
             return false;
         }
-        if (!Atum.config.safeReset) {
+        if (!Atum.config.safeHotkey) {
             return true;
         }
         Element focused = curr.getFocused();

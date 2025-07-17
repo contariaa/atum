@@ -71,7 +71,7 @@ public class AtumConfig implements SpeedrunConfig {
     public Void worldGeneration;
     public boolean demoMode = false;
     public boolean hotkeyOnly = false;
-    public boolean safeReset = true;
+    public boolean safeHotkey = true;
 
     @Config.Hide
     @SuppressWarnings({"unused", "FieldCanBeLocal"}) // saved to config for PaceMan
