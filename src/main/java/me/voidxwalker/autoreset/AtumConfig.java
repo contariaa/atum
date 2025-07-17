@@ -72,6 +72,7 @@ public class AtumConfig implements SpeedrunConfig {
     public boolean demoMode = false;
     public boolean hotkeyOnly = false;
     public boolean safeHotkey = true;
+    public boolean illegalSettingsWarning = true;
 
     @Config.Hide
     @SuppressWarnings({"unused", "FieldCanBeLocal"}) // saved to config for PaceMan
@@ -284,7 +285,9 @@ public class AtumConfig implements SpeedrunConfig {
         if (updateHasLegalSettings()) {
             return;
         }
+        if (Atum.config.illegalSettingsWarning) {
         MinecraftClient.getInstance().openScreen(this.createConfirmScreen(parent));
+        }
     }
 
     public ConfirmScreen createConfirmScreen(Screen parent) {

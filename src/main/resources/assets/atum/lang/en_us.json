@@ -14,5 +14,7 @@
   "speedrunapi.config.atum.option.hotkeyOnly.description": "If enabled, leaving the world normally will not cause a reset.",
   "speedrunapi.config.atum.option.safeHotkey": "Safe Hotkey",
   "speedrunapi.config.atum.option.safeHotkey.description": "If enabled, the atum hotkey will not reset if pressed when a text field is focused.",
+  "speedrunapi.config.atum.option.illegalSettingsWarning": "Illegal Settings Warning",
+  "speedrunapi.config.atum.option.illegalSettingsWarning.description": "Show a warning screen when exiting Atum configuration if using settings that are not allowed for Any% speedruns.",
   "speedrunapi.config.atum.option.worldGeneration": "World Generation"
 }
