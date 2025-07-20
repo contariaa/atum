@@ -13,12 +13,13 @@ public class AtumCreateWorldScreen extends CreateWorldScreen {
     }
 
     public AtumCreateWorldScreen(@Nullable Screen parent, Job job) {
-        this(parent, job, false);
+        this(parent, job, job == Job.CONFIGURATION);
     }
 
     public AtumCreateWorldScreen(@Nullable Screen parent, Job job, boolean shouldShowLegalWarning) {
         super(parent);
         this.job = job;
+        Atum.ensureState(job == Job.CONFIGURATION || !shouldShowLegalWarning, "shouldShowLegalWarning does not apply if the job is not CONFIGURATION!");
         this.shouldShowLegalWarning = shouldShowLegalWarning;
     }
 
