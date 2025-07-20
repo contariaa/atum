@@ -10,6 +10,7 @@ import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.Element;
+import net.minecraft.client.gui.ParentElement;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen;
 import net.minecraft.client.gui.screen.ingame.SignEditScreen;
@@ -149,6 +150,9 @@ public class Atum implements ClientModInitializer {
             return true;
         }
         Element focused = curr.getFocused();
+        while (focused instanceof ParentElement) {
+            focused = ((ParentElement) focused).getFocused();
+        }
         if (focused instanceof TextFieldWidget && ((TextFieldWidget) focused).isActive()) {
             return false;
         }
@@ -161,7 +165,6 @@ public class Atum implements ClientModInitializer {
         if (curr instanceof SignEditScreen) {
             return false;
         }
-        // missing gamerules screen and speedrunapi config screen support
         return true;
     }
 
