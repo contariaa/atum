@@ -31,6 +31,7 @@ import net.minecraft.world.GameRules;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.Nullable;
+import org.lwjgl.glfw.GLFW;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -277,12 +278,12 @@ public class AtumConfig implements SpeedrunConfig {
     @Override
     public void preSave() {
         // fallback in case the player atum resets from the config screen and onConfigScreenClose isn't called
-        updateHasLegalSettings();
+        this.updateHasLegalSettings();
     }
 
     @Override
     public void onConfigScreenClose(Screen current, Screen parent) {
-        if (updateHasLegalSettings()) {
+        if (this.updateHasLegalSettings()) {
             return;
         }
         if (Atum.config.illegalSettingsWarning) {
@@ -297,7 +298,16 @@ public class AtumConfig implements SpeedrunConfig {
             }
             Atum.config.save();
             MinecraftClient.getInstance().openScreen(parent);
-        }, TextUtil.translatable("atum.menu.legal_settings.warning"), Atum.config.getIllegalSettingsWarning(), TextUtil.translatable("atum.menu.legal_settings.confirm"), TextUtil.translatable("atum.menu.legal_settings.reset"));
+        }, TextUtil.translatable("atum.menu.legal_settings.warning"), Atum.config.getIllegalSettingsWarning(), TextUtil.translatable("atum.menu.legal_settings.confirm"), TextUtil.translatable("atum.menu.legal_settings.reset")) {
+            @Override
+            public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+                // ConfirmScreen takes the false callback if esc is pressed
+                if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
+                    return false;
+                }
+                return super.keyPressed(keyCode, scanCode, modifiers);
+            }
+        };
     }
 
     public boolean updateHasLegalSettings() {
