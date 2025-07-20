@@ -441,7 +441,6 @@ public abstract class CreateWorldScreenMixin extends Screen {
         return ((AtumCreateWorldScreen) (Object) this).shouldShowLegalWarning();
     }
 
-
     @Unique
     private boolean isAtumConfig() {
         return this.isAtum() && this.getJob() == Job.CONFIGURATION;
