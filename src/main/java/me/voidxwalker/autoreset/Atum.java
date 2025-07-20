@@ -12,6 +12,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.ParentElement;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.screen.ingame.BookEditScreen;
 import net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen;
 import net.minecraft.client.gui.screen.ingame.SignEditScreen;
 import net.minecraft.client.gui.screen.options.ControlsOptionsScreen;
@@ -162,7 +163,7 @@ public class Atum implements ClientModInitializer {
         if (curr instanceof CreativeInventoryScreen && ((CreativeInventoryScreenAccessor) curr).atum$getSearchBox().isActive()) {
             return false;
         }
-        if (curr instanceof SignEditScreen) {
+        if (curr instanceof SignEditScreen || curr instanceof BookEditScreen) {
             return false;
         }
         return true;

@@ -30,16 +30,21 @@ public abstract class TitleScreenMixin extends Screen {
 
     @Inject(
             method = "init",
-            at = @At("TAIL")
+            at = @At("HEAD")
     )
-    private void init(CallbackInfo info) {
+    private void hotkeyOnlyStopRunning(CallbackInfo ci) {
         if (Atum.isRunning() && !Atum.config.hotkeyOnly) {
             Atum.scheduleReset();
-            return;
         } else if (!Atum.isResetScheduled()) {
             Atum.stopRunning();
         }
+    }
 
+    @Inject(
+            method = "init",
+            at = @At("TAIL")
+    )
+    private void addAtumButton(CallbackInfo info) {
         this.addButton(new ButtonWidget(this.width / 2 - 124, this.height / 4 + 48, 20, 20, LiteralText.EMPTY, button -> {
             if (Screen.hasShiftDown()) {
                 MinecraftClient.getInstance().openScreen(new AtumCreateWorldScreen(this, AtumCreateWorldScreen.Job.CONFIGURATION, true));

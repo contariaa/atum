@@ -12,6 +12,7 @@ import me.voidxwalker.autoreset.api.seedprovider.SeedProvider;
 import me.voidxwalker.autoreset.interfaces.IMoreOptionsDialog;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
+import net.minecraft.client.gui.screen.ProgressScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.world.CreateWorldScreen;
 import net.minecraft.client.gui.screen.world.MoreOptionsDialog;
@@ -362,6 +363,9 @@ public abstract class CreateWorldScreenMixin extends Screen {
         if (Atum.inDemoMode()) {
             String demoWorldName = Atum.config.attemptTracker.incrementAndGetWorldName(AttemptTracker.Type.DEMO);
             Atum.LOGGER.info("Creating \"{}\" with demo seed...", demoWorldName);
+            if (this.client.isOnThread()) {
+                this.client.openScreen(new ProgressScreen());
+            }
             MinecraftClient.getInstance().createWorld(demoWorldName, MinecraftServer.DEMO_LEVEL_INFO, RegistryTracker.create(), GeneratorOptions.DEMO_CONFIG);
             return;
         }
