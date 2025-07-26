@@ -322,8 +322,8 @@ public abstract class CreateWorldScreenMixin extends Screen {
         if (Atum.inDemoMode()) {
             String demoWorldName = Atum.config.attemptTracker.incrementAndGetWorldName(AttemptTracker.Type.DEMO);
             Atum.LOGGER.info("Creating \"{}\" with demo seed...", demoWorldName);
-            if (this.minecraft.isOnThread()) {
-                this.minecraft.openScreen(new ProgressScreen());
+            if (MinecraftClient.getInstance().isOnThread()) {
+                MinecraftClient.getInstance().openScreen(new ProgressScreen());
             }
             MinecraftClient.getInstance().startIntegratedServer(demoWorldName, demoWorldName, MinecraftServer.DEMO_LEVEL_INFO);
             return;
@@ -382,10 +382,10 @@ public abstract class CreateWorldScreenMixin extends Screen {
         }
         if (!Atum.config.illegalSettingsWarning) {
             Atum.config.save();
-            this.minecraft.openScreen(this.parent);
+            MinecraftClient.getInstance().openScreen(this.parent);
             return;
         }
-        Atum.config.createConfirmScreen(Atum.config.createConfirmScreen(this.parent));
+        MinecraftClient.getInstance().openScreen(Atum.config.createConfirmScreen(this.parent));
     }
 
     @Unique
