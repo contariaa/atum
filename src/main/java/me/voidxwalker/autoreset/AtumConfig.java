@@ -1,9 +1,11 @@
 package me.voidxwalker.autoreset;
 
 import com.google.gson.JsonObject;
+import me.contaria.speedrunapi.config.SpeedrunConfigAPI;
 import me.contaria.speedrunapi.config.SpeedrunConfigContainer;
 import me.contaria.speedrunapi.config.api.SpeedrunConfig;
 import me.contaria.speedrunapi.config.api.SpeedrunConfigParsedMetadata;
+import me.contaria.speedrunapi.config.api.SpeedrunOption;
 import me.contaria.speedrunapi.config.api.annotations.Config;
 import me.contaria.speedrunapi.util.TextUtil;
 import me.voidxwalker.autoreset.interfaces.ISeedStringHolder;
@@ -11,16 +13,19 @@ import me.voidxwalker.autoreset.mixin.access.CreateWorldScreen$ModeAccessor;
 import me.voidxwalker.autoreset.mixin.access.GeneratorTypeAccessor;
 import me.voidxwalker.autoreset.mixin.access.IntegratedServerAccessor;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.screen.ConfirmScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.world.CreateWorldScreen;
+import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.text.Text;
 import net.minecraft.world.level.LevelGeneratorType;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.lwjgl.glfw.GLFW;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -29,17 +34,30 @@ public class AtumConfig implements SpeedrunConfig {
     @Config.Ignored
     private SpeedrunConfigContainer<?> container;
 
+    @Config.Hide
     public CreateWorldScreen.Mode gameMode = CreateWorldScreen.Mode.SURVIVAL;
+    @Config.Hide
     public boolean structures = true;
+    @Config.Hide
     @Config.Strings.MaxChars(32)
     public String seed = "";
+    @Config.Hide
     public boolean bonusChest = false;
+    @Config.Hide
     public boolean cheatsEnabled = false;
+    @Config.Hide
     public AtumGeneratorType generatorType = AtumGeneratorType.DEFAULT;
+    @Config.Hide
     public String generatorDetails = "";
 
-    public boolean demoMode;
+    @SuppressWarnings("unused") // for button
+    public Void worldGeneration;
+    public boolean demoMode = false;
+    public boolean hotkeyOnly = false;
+    public boolean safeHotkey = true;
+    public boolean illegalSettingsWarning = true;
 
+    @Config.Hide
     @SuppressWarnings({"unused", "FieldCanBeLocal"}) // saved to config for PaceMan
     private boolean hasLegalSettings;
 
@@ -63,6 +81,60 @@ public class AtumConfig implements SpeedrunConfig {
         } catch (IOException e) {
             Atum.LOGGER.warn("Failed to save Atum config.");
         }
+    }
+
+    @Override
+    public @Nullable SpeedrunOption<?> parseField(Field field, SpeedrunConfig config, String... idPrefix) {
+        if ("worldGeneration".equals(field.getName())) {
+            return new SpeedrunConfigAPI.CustomOption.Builder<>(this, this, field, idPrefix)
+                    .fromJson((option, config_, configStorage, optionField, jsonElement) -> {})
+                    .toJson((option, config_, configStorage, optionField) -> null)
+                    .createWidget((option, config_, configStorage, optionField) -> new ButtonWidget(0, 0, 150, 20, I18n.translate("atum.menu.configure"), button -> {
+                        // isAvailable() already takes care of this, but because it's so important we do another check just to be completely sure Atum is not running when the player opens the Atum config
+                        if (Atum.isRunning()) {
+                            throw new IllegalStateException("Cannot configure Atum while it's running.");
+                        }
+                        MinecraftClient client = MinecraftClient.getInstance();
+                        client.openScreen(new AtumCreateWorldScreen(client.currentScreen, AtumCreateWorldScreen.Job.CONFIGURATION, false));
+                    }))
+                    .build();
+        }
+        return SpeedrunConfig.super.parseField(field, config, idPrefix);
+    }
+
+    @Override
+    public void preSave() {
+        // fallback in case the player atum resets from the config screen and onConfigScreenClose isn't called
+        this.updateHasLegalSettings();
+    }
+
+    @Override
+    public void onConfigScreenClose(Screen current, Screen parent) {
+        if (this.updateHasLegalSettings()) {
+            return;
+        }
+        if (Atum.config.illegalSettingsWarning) {
+            MinecraftClient.getInstance().openScreen(this.createConfirmScreen(parent));
+        }
+    }
+
+    public ConfirmScreen createConfirmScreen(Screen parent) {
+        return new ConfirmScreen(confirm -> {
+            if (!confirm) {
+                Atum.config.resetToLegalSettings();
+            }
+            Atum.config.save();
+            MinecraftClient.getInstance().openScreen(parent);
+        }, TextUtil.translatable("atum.menu.legal_settings.warning"), Atum.config.getIllegalSettingsWarning(), I18n.translate("atum.menu.legal_settings.confirm"), I18n.translate("atum.menu.legal_settings.reset")) {
+            @Override
+            public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+                // ConfirmScreen takes the false callback if esc is pressed
+                if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
+                    return false;
+                }
+                return super.keyPressed(keyCode, scanCode, modifiers);
+            }
+        };
     }
 
     public boolean updateHasLegalSettings() {
@@ -104,7 +176,7 @@ public class AtumConfig implements SpeedrunConfig {
             texts.add(I18n.translate("selectWorld.mapType") + " " + I18n.translate(this.generatorType.get().getTranslationKey()));
         }
         if (this.demoMode) {
-            texts.add(I18n.translate("atum.config.demoMode", I18n.translate("options.on")));
+            texts.add(I18n.translate("speedrunapi.config.atum.option.demoMode", I18n.translate("options.on")));
         }
         return texts;
     }
@@ -201,15 +273,6 @@ public class AtumConfig implements SpeedrunConfig {
     @Override
     public String modID() {
         return "atum";
-    }
-
-    @Override
-    public @NotNull Screen createConfigScreen(Screen parent) {
-        // isAvailable() already takes care of this, but because it's so important we do another check just to be completely sure Atum is not running when the player opens the Atum config
-        if (Atum.isRunning()) {
-            throw new IllegalStateException("Cannot configure Atum while it's running.");
-        }
-        return new AtumCreateWorldScreen(parent, AtumCreateWorldScreen.Job.CONFIGURATION);
     }
 
     @Override

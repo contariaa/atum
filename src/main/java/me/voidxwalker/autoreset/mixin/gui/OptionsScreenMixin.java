@@ -26,7 +26,7 @@ public abstract class OptionsScreenMixin extends Screen {
             at = @At("TAIL")
     )
     private void addStopResetsButton(CallbackInfo ci) {
-        if (Atum.isRunning()) {
+        if (Atum.isRunning() && !Atum.config.hotkeyOnly) {
             this.addButton(new ButtonWidget(0, this.height - 20, 100, 20, I18n.translate("atum.menu.stop_resets"), button -> {
                 button.active = false;
                 Atum.stopRunning();

@@ -2,7 +2,6 @@ package me.voidxwalker.autoreset.mixin.config;
 
 import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import me.contaria.speedrunapi.util.TextUtil;
 import me.voidxwalker.autoreset.AttemptTracker;
 import me.voidxwalker.autoreset.Atum;
 import me.voidxwalker.autoreset.AtumConfig;
@@ -13,7 +12,7 @@ import me.voidxwalker.autoreset.api.seedprovider.SeedProvider;
 import me.voidxwalker.autoreset.interfaces.ISeedStringHolder;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.screen.ConfirmScreen;
+import net.minecraft.client.gui.screen.ProgressScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.world.CreateWorldScreen;
 import net.minecraft.client.gui.widget.AbstractButtonWidget;
@@ -56,16 +55,12 @@ public abstract class CreateWorldScreenMixin extends Screen {
     private boolean tweakedCheats;
 
     @Shadow
-    private boolean moreOptionsOpen;
-    @Shadow
     private TextFieldWidget levelNameField;
     @Shadow
     private ButtonWidget createLevelButton;
 
     @Unique
     private CompletableFuture<String> seedFuture;
-    @Unique
-    private AbstractButtonWidget demoModeButton;
 
     @Shadow
     protected abstract void updateSaveFolderName();
@@ -87,9 +82,6 @@ public abstract class CreateWorldScreenMixin extends Screen {
 
     @Shadow
     public CompoundTag generatorOptionsTag;
-
-    @Shadow
-    private ButtonWidget gameModeSwitchButton;
 
     protected CreateWorldScreenMixin(Text title) {
         super(title);
@@ -163,9 +155,6 @@ public abstract class CreateWorldScreenMixin extends Screen {
             this.levelNameField.setText(Atum.config.attemptTracker.getWorldName(
                     !this.seed.isEmpty() ? AttemptTracker.Type.SSG : AttemptTracker.Type.RSG
             ));
-            if (this.demoModeButton != null) {
-                this.demoModeButton.visible = !moreOptionsOpen;
-            }
         }
     }
 
@@ -212,27 +201,6 @@ public abstract class CreateWorldScreenMixin extends Screen {
     )
     private boolean doNotShowResultFolderOnConfigScreen(CreateWorldScreen screen, TextRenderer textRenderer, String s, int x, int y, int color) {
         return !this.isAtum();
-    }
-
-    @ModifyArg(
-            method = "render",
-            at = @At(
-                    value = "INVOKE",
-                    target = "Lnet/minecraft/client/gui/screen/world/CreateWorldScreen;drawCenteredString(Lnet/minecraft/client/font/TextRenderer;Ljava/lang/String;III)V"
-            ),
-            slice = @Slice(
-                    from = @At(
-                            value = "FIELD",
-                            target = "Lnet/minecraft/client/gui/screen/world/CreateWorldScreen;firstGameModeDescriptionLine:Ljava/lang/String;"
-                    )
-            ),
-            index = 3
-    )
-    private int modifyGameModeDescriptionY(int y) {
-        if (this.isAtum()) {
-            return y - 15;
-        }
-        return y;
     }
 
     @WrapWithCondition(
@@ -354,6 +322,9 @@ public abstract class CreateWorldScreenMixin extends Screen {
         if (Atum.inDemoMode()) {
             String demoWorldName = Atum.config.attemptTracker.incrementAndGetWorldName(AttemptTracker.Type.DEMO);
             Atum.LOGGER.info("Creating \"{}\" with demo seed...", demoWorldName);
+            if (this.minecraft.isOnThread()) {
+                this.minecraft.openScreen(new ProgressScreen());
+            }
             MinecraftClient.getInstance().startIntegratedServer(demoWorldName, demoWorldName, MinecraftServer.DEMO_LEVEL_INFO);
             return;
         }
@@ -388,16 +359,6 @@ public abstract class CreateWorldScreenMixin extends Screen {
         this.levelNameField.active = false;
 
         this.createLevelButton.setMessage(I18n.translate("gui.done"));
-        this.gameModeSwitchButton.y -= 15;
-        this.demoModeButton = this.addButton(new ButtonWidget(
-                this.width / 2 - 75, 151, 150, 20,
-                I18n.translate("atum.config.demoMode", I18n.translate(Atum.config.demoMode ? "options.on" : "options.off")),
-                button -> {
-                    Atum.config.demoMode = !Atum.config.demoMode;
-                    button.setMessage(I18n.translate("atum.config.demoMode", I18n.translate(Atum.config.demoMode ? "options.on" : "options.off")));
-                }
-        ));
-        this.demoModeButton.visible = !this.moreOptionsOpen;
     }
 
     @Unique
@@ -414,18 +375,17 @@ public abstract class CreateWorldScreenMixin extends Screen {
 
     @Unique
     private void closeConfigScreen() {
-        if (Atum.config.updateHasLegalSettings()) {
+        if (Atum.config.updateHasLegalSettings() || !this.shouldShowLegalWarning()) {
             Atum.config.save();
             MinecraftClient.getInstance().openScreen(this.parent);
             return;
         }
-        MinecraftClient.getInstance().openScreen(new ConfirmScreen(confirm -> {
-            if (!confirm) {
-                Atum.config.resetToLegalSettings();
-            }
+        if (!Atum.config.illegalSettingsWarning) {
             Atum.config.save();
-            MinecraftClient.getInstance().openScreen(this.parent);
-        }, TextUtil.translatable("atum.menu.legal_settings.warning"), Atum.config.getIllegalSettingsWarning(), I18n.translate("atum.menu.legal_settings.confirm"), I18n.translate("atum.menu.legal_settings.reset")));
+            this.minecraft.openScreen(this.parent);
+            return;
+        }
+        Atum.config.createConfirmScreen(Atum.config.createConfirmScreen(this.parent));
     }
 
     @Unique
@@ -437,6 +397,12 @@ public abstract class CreateWorldScreenMixin extends Screen {
     @Unique
     private Job getJob() {
         return ((AtumCreateWorldScreen) (Object) this).getJob();
+    }
+
+    @SuppressWarnings("DataFlowIssue")
+    @Unique
+    private boolean shouldShowLegalWarning() {
+        return ((AtumCreateWorldScreen) (Object) this).shouldShowLegalWarning();
     }
 
     @Unique
