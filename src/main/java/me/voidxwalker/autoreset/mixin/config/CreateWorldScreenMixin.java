@@ -12,9 +12,8 @@ import me.voidxwalker.autoreset.api.seedprovider.SeedProvider;
 import me.voidxwalker.autoreset.interfaces.IMoreOptionsDialog;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.screen.ConfirmScreen;
+import net.minecraft.client.gui.screen.ProgressScreen;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.ScreenTexts;
 import net.minecraft.client.gui.screen.world.CreateWorldScreen;
 import net.minecraft.client.gui.screen.world.MoreOptionsDialog;
 import net.minecraft.client.gui.widget.AbstractButtonWidget;
@@ -76,8 +75,6 @@ public abstract class CreateWorldScreenMixin extends Screen {
     @Final
     public MoreOptionsDialog moreOptionsDialog;
     @Shadow
-    private boolean moreOptionsOpen;
-    @Shadow
     private TextFieldWidget levelNameField;
     @Shadow
     private ButtonWidget createLevelButton;
@@ -86,8 +83,6 @@ public abstract class CreateWorldScreenMixin extends Screen {
 
     @Unique
     private CompletableFuture<String> seedFuture;
-    @Unique
-    private AbstractButtonWidget demoModeButton;
 
     @Shadow
     protected abstract void updateSaveFolderName();
@@ -168,9 +163,6 @@ public abstract class CreateWorldScreenMixin extends Screen {
             this.levelNameField.setText(Atum.config.attemptTracker.getWorldName(
                     ((IMoreOptionsDialog) this.moreOptionsDialog).atum$isSetSeed() ? AttemptTracker.Type.SSG : AttemptTracker.Type.RSG
             ));
-            if (this.demoModeButton != null) {
-                this.demoModeButton.visible = moreOptionsOpen;
-            }
         }
     }
 
@@ -371,6 +363,9 @@ public abstract class CreateWorldScreenMixin extends Screen {
         if (Atum.inDemoMode()) {
             String demoWorldName = Atum.config.attemptTracker.incrementAndGetWorldName(AttemptTracker.Type.DEMO);
             Atum.LOGGER.info("Creating \"{}\" with demo seed...", demoWorldName);
+            if (this.client.isOnThread()) {
+                this.client.openScreen(new ProgressScreen());
+            }
             MinecraftClient.getInstance().createWorld(demoWorldName, MinecraftServer.DEMO_LEVEL_INFO, RegistryTracker.create(), GeneratorOptions.DEMO_CONFIG);
             return;
         }
@@ -405,12 +400,6 @@ public abstract class CreateWorldScreenMixin extends Screen {
 
         this.dataPacksButton.active = this.dataPackTempDir != null;
         this.createLevelButton.setMessage(TextUtil.translatable("gui.done"));
-        this.demoModeButton = this.addButton(new ButtonWidget(
-                this.width / 2 + 5, 151, 150, 20,
-                TextUtil.translatable("atum.config.demoMode", ScreenTexts.getToggleText(Atum.config.demoMode)),
-                button -> button.setMessage(TextUtil.translatable("atum.config.demoMode", ScreenTexts.getToggleText(Atum.config.demoMode = !Atum.config.demoMode)))
-        ));
-        this.demoModeButton.visible = this.moreOptionsOpen;
     }
 
     @Unique
@@ -426,18 +415,17 @@ public abstract class CreateWorldScreenMixin extends Screen {
 
     @Unique
     private void closeConfigScreen() {
-        if (Atum.config.updateHasLegalSettings()) {
+        if (Atum.config.updateHasLegalSettings() || !this.shouldShowLegalWarning()) {
             Atum.config.save();
             MinecraftClient.getInstance().openScreen(this.parent);
             return;
         }
-        MinecraftClient.getInstance().openScreen(new ConfirmScreen(confirm -> {
-            if (!confirm) {
-                Atum.config.resetToLegalSettings();
-            }
+        if (!Atum.config.illegalSettingsWarning) {
             Atum.config.save();
-            MinecraftClient.getInstance().openScreen(this.parent);
-        }, TextUtil.translatable("atum.menu.legal_settings.warning"), Atum.config.getIllegalSettingsWarning(), TextUtil.translatable("atum.menu.legal_settings.confirm"), TextUtil.translatable("atum.menu.legal_settings.reset")));
+            this.client.openScreen(this.parent);
+            return;
+        }
+        Atum.config.createConfirmScreen(Atum.config.createConfirmScreen(this.parent));
     }
 
     @Unique
@@ -449,6 +437,12 @@ public abstract class CreateWorldScreenMixin extends Screen {
     @Unique
     private Job getJob() {
         return ((AtumCreateWorldScreen) (Object) this).getJob();
+    }
+
+    @SuppressWarnings("DataFlowIssue")
+    @Unique
+    private boolean shouldShowLegalWarning() {
+        return ((AtumCreateWorldScreen) (Object) this).shouldShowLegalWarning();
     }
 
     @Unique
