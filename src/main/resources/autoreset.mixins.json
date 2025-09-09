@@ -17,6 +17,7 @@
     "gui.LoadingScreenRendererMixin",
     "gui.SettingsScreenMixin",
     "gui.TitleScreenMixin",
+    "hotkey.ControlsListWidgetMixin",
     "hotkey.GameOptionsMixin",
     "hotkey.MinecraftClientMixin",
     "hotkey.ScreenMixin"
