@@ -11,10 +11,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class DeathScreenMixin {
 
     @Inject(
-            method = "method_20373",
+            method = "confirmResult",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/client/MinecraftClient;disconnect(Lnet/minecraft/client/gui/screen/Screen;)V"
+                    target = "Lnet/minecraft/client/world/ClientWorld;disconnect()V"
             )
     )
     private void stopResettingOnDeathQuit(CallbackInfo ci) {

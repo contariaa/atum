@@ -4,16 +4,19 @@ import io.netty.util.internal.ConcurrentSet;
 import me.voidxwalker.autoreset.api.seedprovider.AtumWaitingScreen;
 import me.voidxwalker.autoreset.api.seedprovider.SeedProvider;
 import net.fabricmc.api.ClientModInitializer;
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.options.KeyBinding;
-import net.minecraft.text.LiteralText;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.screen.options.ControlsOptionsScreen;
+import net.minecraft.client.option.KeyBinding;
+import net.minecraft.server.MinecraftServer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.lwjgl.glfw.GLFW;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Objects;
+import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -37,7 +40,7 @@ public class Atum implements ClientModInitializer {
         running = true;
         shouldReset = false;
 
-        MinecraftClient.getInstance().openScreen(new AtumCreateWorldScreen(null));
+        MinecraftClient.getInstance().setScreen(new AtumCreateWorldScreen(null));
     }
 
     public static boolean isRunning() {
@@ -66,7 +69,7 @@ public class Atum implements ClientModInitializer {
 
     public static boolean isBlocking() {
         MinecraftClient client = MinecraftClient.getInstance();
-        return client.getOverlay() != null || isLoadingWorld() || client.currentScreen instanceof AtumWaitingScreen;
+        return isLoadingWorld() || client.currentScreen instanceof AtumWaitingScreen;
     }
 
     public static boolean isInWorld() {
@@ -74,18 +77,24 @@ public class Atum implements ClientModInitializer {
     }
 
     public static boolean isLoadingWorld() {
-        return MinecraftClient.getInstance().getServer() != null && MinecraftClient.getInstance().world == null;
+        MinecraftServer server = MinecraftClient.getInstance().getServer();
+        return server != null && server.getLevelName() != null && MinecraftClient.getInstance().world == null;
     }
 
-    public static boolean inDemoMode() {
-        return isRunning() && config.demoMode;
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
+    public static boolean canReset() {
+        Screen screen = MinecraftClient.getInstance().currentScreen;
+        if (screen instanceof ControlsOptionsScreen) {
+            return ((ControlsOptionsScreen) screen).selectedKeyBinding != resetKey;
+        }
+        return true;
     }
 
     /**
      * Returns true if the seed is set by Atum and no external seed provider is used, used by chunkcacher.
      */
     public static boolean isSetSeed() {
-        return Atum.seedProvider == DEFAULT_SEED_PROVIDER && (config.isSetSeed() || config.demoMode);
+        return Atum.seedProvider == DEFAULT_SEED_PROVIDER && config.isSetSeed();
     }
 
     public static SeedProvider getSeedProvider() {
@@ -114,7 +123,7 @@ public class Atum implements ClientModInitializer {
             if (isRunning()) {
                 stopRunning();
                 if (client.world == null) {
-                    client.openScreen(null);
+                    client.setScreen(null);
                 }
             }
             while (!SEED_FAILURES.isEmpty()) {
@@ -125,10 +134,10 @@ public class Atum implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
-        resetKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+        resetKey = new KeyBinding(
                 "Create New World",
-                GLFW.GLFW_KEY_F6,
+                64,
                 "key.categories.atum"
-        ));
+        );
     }
 }

@@ -20,6 +20,11 @@ public class AtumCreateWorldScreen extends CreateWorldScreen {
         return this.job;
     }
 
+    @Override
+    public boolean shouldPauseGame() {
+        return this.job != Job.CREATION;
+    }
+
     public enum Job {
         CREATION,
         CONFIGURATION

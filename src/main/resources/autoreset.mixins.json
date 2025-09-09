@@ -9,15 +9,16 @@
   "client": [
     "LevelInfoMixin",
     "MinecraftClientMixin",
-    "access.GeneratorTypeAccessor",
     "access.IntegratedServerAccessor",
+    "access.ScreenAccessor",
     "config.CreateWorldScreenMixin",
     "gui.DeathScreenMixin",
     "gui.DebugHudMixin",
     "gui.LevelLoadingScreenMixin",
     "gui.OptionsScreenMixin",
     "gui.TitleScreenMixin",
-    "hotkey.KeyboardMixin",
-    "hotkey.MouseMixin"
+    "hotkey.GameOptionsMixin",
+    "hotkey.MinecraftClientMixin",
+    "hotkey.ScreenMixin"
   ]
 }

@@ -1,7 +1,6 @@
 package me.voidxwalker.autoreset.api.seedprovider;
 
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.text.Text;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -13,8 +12,7 @@ public abstract class AtumWaitingScreen extends Screen {
     private final List<Runnable> onTick = new LinkedList<>();
     private final List<Runnable> onCancel = new LinkedList<>();
 
-    protected AtumWaitingScreen(Text title) {
-        super(title);
+    protected AtumWaitingScreen() {
     }
 
     @SuppressWarnings("unused")
@@ -23,11 +21,10 @@ public abstract class AtumWaitingScreen extends Screen {
     }
 
     @Override
-    public boolean shouldCloseOnEsc() {
-        return false;
+    protected void keyPressed(char id, int code) {
+        // do not close on esc
     }
 
-    @Override
     public final void onClose() {
         for (Runnable r : this.onCancel) {
             r.run();

@@ -1,38 +1,46 @@
 package me.voidxwalker.autoreset.mixin.gui;
 
-import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
-import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import me.voidxwalker.autoreset.Atum;
 import me.voidxwalker.autoreset.interfaces.ISeedStringHolder;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.screen.LevelLoadingScreen;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.render.LoadingScreenRenderer;
+import net.minecraft.client.util.Window;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.Objects;
 
-@Mixin(LevelLoadingScreen.class)
+@Mixin(LoadingScreenRenderer.class)
 public abstract class LevelLoadingScreenMixin implements ISeedStringHolder {
+    @Shadow
+    private MinecraftClient client;
+    @Shadow
+    private Window window;
+
     @Unique
     private String seedString;
 
-    @WrapOperation(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/LevelLoadingScreen;drawCenteredString(Lnet/minecraft/client/font/TextRenderer;Ljava/lang/String;III)V"))
-    private void drawSeedString(LevelLoadingScreen screen, TextRenderer textRenderer, String s, int x, int y, int color, Operation<Void> original) {
-        original.call(screen, textRenderer, s, x, y, color);
+    @Inject(method = "setProgressPercentage", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/font/TextRenderer;drawWithShadow(Ljava/lang/String;FFI)I", ordinal = 1,shift = At.Shift.AFTER))
+    private void renderSeed(CallbackInfo ci) {
         if (!Atum.isRunning()) {
             return;
         }
-        if (Atum.inDemoMode()) {
-            screen.drawCenteredString(textRenderer, "North Carolina", x, y - 20, color);
-        } else if (!this.seedString.isEmpty()) {
-            screen.drawCenteredString(textRenderer, Atum.getSeedProvider().shouldShowSeed() ? this.seedString : "Set Seed", x, y - 20, color);
+        if (this.seedString != null && !this.seedString.isEmpty()) {
+            this.client.textRenderer.drawWithShadow(
+                    this.seedString,
+                    (this.window.getWidth() - this.client.textRenderer.getStringWidth(this.seedString)) / 2.0f,
+                    this.window.getHeight() / 2.0f - 4 - 40,
+                    0xFFFFFF
+            );
         }
     }
 
     @Override
     public void atum$setSeedString(String seedString) {
-        Atum.ensureState(this.seedString == null, "Seed string for this LevelLoadingScreen has already been set!");
         this.seedString = Objects.requireNonNull(seedString);
     }
 
