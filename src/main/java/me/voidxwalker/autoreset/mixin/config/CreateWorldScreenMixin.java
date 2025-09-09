@@ -120,6 +120,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
         }
 
         this.seedField.setText(Atum.config.seed);
+        this.seed = Atum.config.seed;
 
         this.initConfigScreen();
     }
