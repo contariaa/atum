@@ -115,7 +115,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
         }
 
         if (this.isAtumReset()) {
-            continueReset();
+            this.continueReset();
             return;
         }
 
@@ -303,6 +303,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
     @Unique
     private void createWorld(String seed) {
         this.seedField.setText(seed);
+        this.seed = seed;
 
         // micro optimization, vanilla calls the changed listener twice,
         // once on setText and once on setCursorToEnd
@@ -349,7 +350,8 @@ public abstract class CreateWorldScreenMixin extends Screen {
         Atum.config.gameMode = this.gamemodeName;
         Atum.config.structures = this.structures;
         Atum.config.seed = this.seed;
-        Atum.config.cheatsEnabled = this.cheatsEnabled;
+        // tweakedCheats and cheatsEnabled are mapped the wrong way around
+        Atum.config.cheatsEnabled = this.tweakedCheats;
         Atum.config.bonusChest = this.bonusChest;
 
         Atum.config.generatorType = AtumConfig.AtumGeneratorType.from(LevelGeneratorType.TYPES[this.generatorType]);

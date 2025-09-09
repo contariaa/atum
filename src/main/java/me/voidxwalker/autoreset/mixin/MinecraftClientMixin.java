@@ -84,7 +84,7 @@ public abstract class MinecraftClientMixin {
                     target = "Lnet/minecraft/client/render/LoadingScreenRenderer;setTitle(Ljava/lang/String;)V"
             )
     )
-    private LoadingScreenRenderer addSeedToLLS(LoadingScreenRenderer renderer, String title, @Local(argsOnly = true) LevelInfo levelInfo) {
+    private LoadingScreenRenderer addSeedToLSR(LoadingScreenRenderer renderer, String title, @Local(argsOnly = true) LevelInfo levelInfo) {
         String seed = ((ISeedStringHolder) (Object) levelInfo).atum$getSeedString();
         if (seed != null) {
             ((ISeedStringHolder) renderer).atum$setSeedString(seed);

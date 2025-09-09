@@ -15,7 +15,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.Objects;
 
 @Mixin(LoadingScreenRenderer.class)
-public abstract class LevelLoadingScreenMixin implements ISeedStringHolder {
+public abstract class LoadingScreenRendererMixin implements ISeedStringHolder {
     @Shadow
     private MinecraftClient client;
     @Shadow
@@ -24,7 +24,15 @@ public abstract class LevelLoadingScreenMixin implements ISeedStringHolder {
     @Unique
     private String seedString;
 
-    @Inject(method = "setProgressPercentage", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/font/TextRenderer;drawWithShadow(Ljava/lang/String;FFI)I", ordinal = 1,shift = At.Shift.AFTER))
+    @Inject(
+            method = "setProgressPercentage",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/client/font/TextRenderer;drawWithShadow(Ljava/lang/String;FFI)I",
+                    ordinal = 1,
+                    shift = At.Shift.AFTER
+            )
+    )
     private void renderSeed(CallbackInfo ci) {
         if (!Atum.isRunning()) {
             return;

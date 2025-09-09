@@ -12,7 +12,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(SettingsScreen.class)
-public abstract class OptionsScreenMixin extends Screen {
+public abstract class SettingsScreenMixin extends Screen {
 
     @Inject(
             method = "init",
