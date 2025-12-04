@@ -240,7 +240,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
         dataPacks = dataPacks.filter(path -> {
             // check if datapacks are expected in main directory
             if (path.getParent().equals(directory)) {
-                String name = "file/" + path.relativize(Atum.config.dataPackDirectory);
+                String name = "file/" + Atum.config.dataPackDirectory.relativize(path);
                 if (expected.remove(name)) {
                     paths.add(path);
                     return true;
