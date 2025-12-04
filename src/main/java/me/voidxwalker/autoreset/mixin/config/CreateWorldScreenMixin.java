@@ -415,6 +415,8 @@ public abstract class CreateWorldScreenMixin extends Screen {
         Atum.config.structures = ((WorldCreatorAccessor) this.worldCreator).atum$shouldGenerateStructures();
         Atum.config.bonusChest = ((WorldCreatorAccessor) this.worldCreator).atum$isBonusChestEnabled();
 
+        Atum.config.seed = this.worldCreator.getSeed();
+
         Atum.config.generatorType = AtumConfig.AtumWorldType.from(this.worldCreator.getWorldType());
         Atum.config.generatorDetails = this.saveGeneratorDetails(Atum.config.generatorType);
 
