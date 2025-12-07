@@ -1,7 +1,7 @@
 package me.voidxwalker.autoreset.api.seedprovider;
 
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.text.Text;
+import net.minecraft.client.gui.Screen;
+import net.minecraft.network.chat.Component;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -13,7 +13,7 @@ public abstract class AtumWaitingScreen extends Screen {
     private final List<Runnable> onTick = new LinkedList<>();
     private final List<Runnable> onCancel = new LinkedList<>();
 
-    protected AtumWaitingScreen(Text title) {
+    protected AtumWaitingScreen(Component title) {
         super(title);
     }
 

@@ -5,11 +5,11 @@ import me.voidxwalker.autoreset.Atum;
 import me.voidxwalker.autoreset.AtumCreateWorldScreen;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawableHelper;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.TitleScreen;
+import net.minecraft.client.gui.MainMenuScreen;
+import net.minecraft.client.gui.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.resource.language.I18n;
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
 import net.minecraft.util.Identifier;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -17,12 +17,12 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(TitleScreen.class)
-public abstract class TitleScreenMixin extends Screen {
+@Mixin(MainMenuScreen.class)
+public abstract class MainMenuScreenMixin extends Screen {
     @Unique
     private static final Identifier BUTTON_IMAGE = IdentifierUtil.ofVanilla("textures/item/golden_boots.png");
 
-    protected TitleScreenMixin(Text title) {
+    protected MainMenuScreenMixin(Component title) {
         super(title);
     }
 

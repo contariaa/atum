@@ -1,7 +1,7 @@
 package me.voidxwalker.autoreset.mixin.gui;
 
 import me.voidxwalker.autoreset.Atum;
-import net.minecraft.client.gui.screen.DeathScreen;
+import net.minecraft.client.gui.ingame.DeathScreen;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -14,7 +14,7 @@ public abstract class DeathScreenMixin {
             method = "method_20373",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/client/MinecraftClient;disconnect(Lnet/minecraft/client/gui/screen/Screen;)V"
+                    target = "Lnet/minecraft/client/MinecraftClient;disconnect(Lnet/minecraft/client/gui/Screen;)V"
             )
     )
     private void stopResettingOnDeathQuit(CallbackInfo ci) {

@@ -1,10 +1,10 @@
 package me.voidxwalker.autoreset;
 
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.world.CreateWorldScreen;
+import net.minecraft.client.gui.Screen;
+import net.minecraft.client.gui.menu.NewLevelScreen;
 import org.jetbrains.annotations.Nullable;
 
-public class AtumCreateWorldScreen extends CreateWorldScreen {
+public class AtumCreateWorldScreen extends NewLevelScreen {
     private final Job job;
 
     public AtumCreateWorldScreen(@Nullable Screen parent) {

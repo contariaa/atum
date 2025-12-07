@@ -11,12 +11,12 @@
     "MinecraftClientMixin",
     "access.GeneratorTypeAccessor",
     "access.IntegratedServerAccessor",
-    "config.CreateWorldScreenMixin",
+    "config.NewLevelScreenMixin",
     "gui.DeathScreenMixin",
     "gui.DebugHudMixin",
-    "gui.LevelLoadingScreenMixin",
-    "gui.OptionsScreenMixin",
-    "gui.TitleScreenMixin",
+    "gui.WorldGenerationProgressScreenMixin",
+    "gui.MainMenuScreenMixin",
+    "gui.SettingsScreenMixin",
     "hotkey.KeyboardMixin",
     "hotkey.MouseMixin"
   ]

@@ -5,20 +5,20 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import me.voidxwalker.autoreset.Atum;
 import me.voidxwalker.autoreset.interfaces.ISeedStringHolder;
 import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.screen.LevelLoadingScreen;
+import net.minecraft.client.gui.WorldGenerationProgressScreen;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 
 import java.util.Objects;
 
-@Mixin(LevelLoadingScreen.class)
-public abstract class LevelLoadingScreenMixin implements ISeedStringHolder {
+@Mixin(WorldGenerationProgressScreen.class)
+public abstract class WorldGenerationProgressScreenMixin implements ISeedStringHolder {
     @Unique
     private String seedString;
 
-    @WrapOperation(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/LevelLoadingScreen;drawCenteredString(Lnet/minecraft/client/font/TextRenderer;Ljava/lang/String;III)V"))
-    private void drawSeedString(LevelLoadingScreen screen, TextRenderer textRenderer, String s, int x, int y, int color, Operation<Void> original) {
+    @WrapOperation(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/WorldGenerationProgressScreen;drawCenteredString(Lnet/minecraft/client/font/TextRenderer;Ljava/lang/String;III)V"))
+    private void drawSeedString(WorldGenerationProgressScreen screen, TextRenderer textRenderer, String s, int x, int y, int color, Operation<Void> original) {
         original.call(screen, textRenderer, s, x, y, color);
         if (!Atum.isRunning()) {
             return;

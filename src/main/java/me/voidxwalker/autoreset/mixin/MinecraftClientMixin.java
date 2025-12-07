@@ -6,8 +6,8 @@ import me.contaria.speedrunapi.util.TextUtil;
 import me.voidxwalker.autoreset.Atum;
 import me.voidxwalker.autoreset.interfaces.ISeedStringHolder;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.Element;
-import net.minecraft.client.gui.screen.*;
+import net.minecraft.client.gui.*;
+import net.minecraft.client.gui.menu.PauseMenuScreen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.client.world.ClientWorld;
@@ -38,7 +38,7 @@ public abstract class MinecraftClientMixin {
     public abstract void disconnect(Screen screen);
 
     @Inject(
-            method = "run",
+            method = "start",
             at = @At(
                     value = "INVOKE",
                     target = "Lnet/minecraft/client/MinecraftClient;render(Z)V",
@@ -48,14 +48,14 @@ public abstract class MinecraftClientMixin {
     private void executeReset(CallbackInfo ci) {
         while (Atum.shouldReset()) {
             if (Atum.isInWorld()) {
-                Screen gameMenuScreen = new GameMenuScreen(true);
+                Screen gameMenuScreen = new PauseMenuScreen();
                 gameMenuScreen.init(MinecraftClient.getInstance(), 0, 0);
                 if (!this.clickButton(gameMenuScreen, "fast_reset.menu.quitWorld", "menu.quitWorld", "menu.returnToMenu", "menu.disconnect") || Atum.isInWorld()) {
                     if (this.world != null) {
                         this.world.disconnect();
-                        this.disconnect(new SaveLevelScreen(TextUtil.translatable("menu.savingLevel")));
+                        this.disconnect(new CloseWorldScreen(TextUtil.translatable("menu.savingLevel")));
                     }
-                    this.openScreen(new TitleScreen());
+                    this.openScreen(new MainMenuScreen());
                 }
             }
             Atum.createNewWorld();
@@ -80,7 +80,7 @@ public abstract class MinecraftClientMixin {
             method = "startIntegratedServer",
             at = @At("STORE")
     )
-    private LevelLoadingScreen addSeedToLLS(LevelLoadingScreen levelLoadingScreen, @Local(argsOnly = true) LevelInfo levelInfo) {
+    private WorldGenerationProgressScreen addSeedToLLS(WorldGenerationProgressScreen levelLoadingScreen, @Local(argsOnly = true) LevelInfo levelInfo) {
         String seed = ((ISeedStringHolder) (Object) levelInfo).atum$getSeedString();
         if (seed != null) {
             ((ISeedStringHolder) levelLoadingScreen).atum$setSeedString(seed);
@@ -105,7 +105,7 @@ public abstract class MinecraftClientMixin {
     }
 
     @Inject(
-            method = "run",
+            method = "start",
             at = @At(
                     value = "INVOKE",
                     target = "Lnet/minecraft/client/MinecraftClient;render(Z)V"

@@ -10,10 +10,10 @@ import me.voidxwalker.autoreset.interfaces.ISeedStringHolder;
 import me.voidxwalker.autoreset.mixin.access.GeneratorTypeAccessor;
 import me.voidxwalker.autoreset.mixin.access.IntegratedServerAccessor;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.Screen;
 import net.minecraft.client.resource.language.I18n;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.text.Text;
 import net.minecraft.world.level.LevelGeneratorType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -72,7 +72,7 @@ public class AtumConfig implements SpeedrunConfig {
                 !this.demoMode;
     }
 
-    public Text getIllegalSettingsWarning() {
+    public Component getIllegalSettingsWarning() {
         List<String> warnings = this.getIllegalSettingsStrings();
         if (warnings.isEmpty()) {
             return TextUtil.translatable("gui.none");

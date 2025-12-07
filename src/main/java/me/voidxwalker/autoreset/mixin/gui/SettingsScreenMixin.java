@@ -2,22 +2,22 @@ package me.voidxwalker.autoreset.mixin.gui;
 
 import me.contaria.speedrunapi.util.TextUtil;
 import me.voidxwalker.autoreset.Atum;
-import net.minecraft.client.gui.screen.SaveLevelScreen;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.SettingsScreen;
-import net.minecraft.client.gui.screen.TitleScreen;
+import net.minecraft.client.gui.CloseWorldScreen;
+import net.minecraft.client.gui.MainMenuScreen;
+import net.minecraft.client.gui.Screen;
+import net.minecraft.client.gui.menu.SettingsScreen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.resource.language.I18n;
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(SettingsScreen.class)
-public abstract class OptionsScreenMixin extends Screen {
+public abstract class SettingsScreenMixin extends Screen {
 
-    protected OptionsScreenMixin(Text title) {
+    protected SettingsScreenMixin(Component title) {
         super(title);
     }
 
@@ -32,8 +32,8 @@ public abstract class OptionsScreenMixin extends Screen {
                 Atum.stopRunning();
                 if (this.minecraft != null && this.minecraft.world != null) {
                     this.minecraft.world.disconnect();
-                    this.minecraft.disconnect(new SaveLevelScreen(TextUtil.translatable("menu.savingLevel")));
-                    this.minecraft.openScreen(new TitleScreen());
+                    this.minecraft.disconnect(new CloseWorldScreen(TextUtil.translatable("menu.savingLevel")));
+                    this.minecraft.openScreen(new MainMenuScreen());
                 }
             }));
         }

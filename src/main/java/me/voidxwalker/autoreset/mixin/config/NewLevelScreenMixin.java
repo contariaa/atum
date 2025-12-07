@@ -13,17 +13,17 @@ import me.voidxwalker.autoreset.api.seedprovider.SeedProvider;
 import me.voidxwalker.autoreset.interfaces.ISeedStringHolder;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.screen.ConfirmScreen;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.world.CreateWorldScreen;
+import net.minecraft.client.gui.menu.NewLevelScreen;
+import net.minecraft.client.gui.Screen;
+import net.minecraft.client.gui.menu.YesNoScreen;
 import net.minecraft.client.gui.widget.AbstractButtonWidget;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.StringNbtReader;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.text.Text;
 import net.minecraft.world.level.LevelGeneratorType;
 import net.minecraft.world.level.LevelInfo;
 import org.jetbrains.annotations.Nullable;
@@ -42,8 +42,8 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 
-@Mixin(CreateWorldScreen.class)
-public abstract class CreateWorldScreenMixin extends Screen {
+@Mixin(NewLevelScreen.class)
+public abstract class NewLevelScreenMixin extends Screen {
     @Shadow
     @Final
     private Screen parent;
@@ -55,13 +55,13 @@ public abstract class CreateWorldScreenMixin extends Screen {
     @Shadow
     private String seed;
     @Shadow
-    private boolean cheatsEnabled;
+    private boolean commandsAllowed;
     @Shadow
     private boolean field_3179; // tweakedCheats
     @Shadow
     private boolean structures;
     @Shadow
-    private boolean bonusChest;
+    private boolean enableBonusItems;
     @Shadow
     private int generatorType;
     @Shadow
@@ -70,13 +70,13 @@ public abstract class CreateWorldScreenMixin extends Screen {
     @Shadow
     private boolean field_3202; // moreOptionsOpen
     @Shadow
-    private TextFieldWidget levelNameField;
+    private TextFieldWidget textFieldLevelName;
     @Shadow
-    private ButtonWidget createLevelButton;
+    private ButtonWidget buttonCreateLevel;
     @Shadow
-    private TextFieldWidget seedField;
+    private TextFieldWidget textFieldSeed;
     @Shadow
-    private ButtonWidget gameModeSwitchButton;
+    private ButtonWidget buttonGameModeSwitch;
 
     @Unique
     private CompletableFuture<String> seedFuture;
@@ -89,7 +89,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
     @Shadow
     protected abstract void createLevel();
 
-    protected CreateWorldScreenMixin(Text title) {
+    protected NewLevelScreenMixin(Component title) {
         super(title);
     }
 
@@ -109,7 +109,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
             method = "init",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/client/gui/screen/world/CreateWorldScreen;addButton(Lnet/minecraft/client/gui/widget/AbstractButtonWidget;)Lnet/minecraft/client/gui/widget/AbstractButtonWidget;",
+                    target = "Lnet/minecraft/client/gui/menu/NewLevelScreen;addButton(Lnet/minecraft/client/gui/widget/AbstractButtonWidget;)Lnet/minecraft/client/gui/widget/AbstractButtonWidget;",
                     ordinal = 0
             ),
             slice = @Slice(
@@ -119,7 +119,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
                     )
             )
     )
-    private boolean removeCancelButton(CreateWorldScreen screen, AbstractButtonWidget button) {
+    private boolean removeCancelButton(NewLevelScreen screen, AbstractButtonWidget button) {
         return !this.isAtum();
     }
 
@@ -137,7 +137,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
             return;
         }
 
-        this.seedField.setText(Atum.config.seed);
+        this.textFieldSeed.setText(Atum.config.seed);
 
         this.initConfigScreen();
     }
@@ -158,7 +158,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
     )
     private void updateLevelNameField(boolean moreOptionsOpen, CallbackInfo ci) {
         if (this.isAtumConfig()) {
-            this.levelNameField.setText(Atum.config.attemptTracker.getWorldName(
+            this.textFieldLevelName.setText(Atum.config.attemptTracker.getWorldName(
                     !this.seed.isEmpty() ? AttemptTracker.Type.SSG : AttemptTracker.Type.RSG
             ));
             if (this.demoModeButton != null) {
@@ -187,10 +187,10 @@ public abstract class CreateWorldScreenMixin extends Screen {
             method = "init",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/client/gui/screen/world/CreateWorldScreen;method_2727()V"
+                    target = "Lnet/minecraft/client/gui/menu/NewLevelScreen;method_2727()V"
             )
     )
-    private boolean doNotUpdateEmptySaveFolderName(CreateWorldScreen screen) {
+    private boolean doNotUpdateEmptySaveFolderName(NewLevelScreen screen) {
         // micro-optimization, we call updateSaveFolderName ourselves when creating the level
         return !this.isAtumReset();
     }
@@ -199,7 +199,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
             method = "render",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/client/gui/screen/world/CreateWorldScreen;drawString(Lnet/minecraft/client/font/TextRenderer;Ljava/lang/String;III)V"
+                    target = "Lnet/minecraft/client/gui/menu/NewLevelScreen;drawString(Lnet/minecraft/client/font/TextRenderer;Ljava/lang/String;III)V"
             ),
             slice = @Slice(
                     from = @At(
@@ -208,7 +208,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
                     )
             )
     )
-    private boolean doNotShowResultFolderOnConfigScreen(CreateWorldScreen screen, TextRenderer textRenderer, String s, int x, int y, int color) {
+    private boolean doNotShowResultFolderOnConfigScreen(NewLevelScreen screen, TextRenderer textRenderer, String s, int x, int y, int color) {
         return !this.isAtum();
     }
 
@@ -216,12 +216,12 @@ public abstract class CreateWorldScreenMixin extends Screen {
             method = "render",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/client/gui/screen/world/CreateWorldScreen;drawCenteredString(Lnet/minecraft/client/font/TextRenderer;Ljava/lang/String;III)V"
+                    target = "Lnet/minecraft/client/gui/menu/NewLevelScreen;drawCenteredString(Lnet/minecraft/client/font/TextRenderer;Ljava/lang/String;III)V"
             ),
             slice = @Slice(
                     from = @At(
                             value = "FIELD",
-                            target = "Lnet/minecraft/client/gui/screen/world/CreateWorldScreen;field_3194:Ljava/lang/String;"
+                            target = "Lnet/minecraft/client/gui/menu/NewLevelScreen;field_3194:Ljava/lang/String;"
                     )
             ),
             index = 3
@@ -237,7 +237,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
             method = "createLevel",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/client/MinecraftClient;openScreen(Lnet/minecraft/client/gui/screen/Screen;)V"
+                    target = "Lnet/minecraft/client/MinecraftClient;openScreen(Lnet/minecraft/client/gui/Screen;)V"
             )
     )
     private boolean doNotOpenTitleScreen(MinecraftClient client, Screen screen) {
@@ -262,8 +262,8 @@ public abstract class CreateWorldScreenMixin extends Screen {
         this.gameMode = Atum.config.gameMode;
         this.field_3178 = this.gameMode.equals("hardcore");
         this.structures = Atum.config.structures;
-        this.cheatsEnabled = Atum.config.cheatsEnabled;
-        this.bonusChest = Atum.config.bonusChest;
+        this.commandsAllowed = Atum.config.cheatsEnabled;
+        this.enableBonusItems = Atum.config.bonusChest;
         this.field_3179 = true;
 
         this.generatorType = Atum.config.generatorType.get().getId();
@@ -353,41 +353,41 @@ public abstract class CreateWorldScreenMixin extends Screen {
         if (Atum.inDemoMode()) {
             String demoWorldName = Atum.config.attemptTracker.incrementAndGetWorldName(AttemptTracker.Type.DEMO);
             Atum.LOGGER.info("Creating \"{}\" with demo seed...", demoWorldName);
-            MinecraftClient.getInstance().startIntegratedServer(demoWorldName, demoWorldName, MinecraftServer.DEMO_LEVEL_INFO);
+            MinecraftClient.getInstance().startIntegratedServer(demoWorldName, demoWorldName, MinecraftServer.WORLD_INFO);
             return;
         }
 
-        this.seedField.setText(seed);
+        this.textFieldSeed.setText(seed);
 
         // micro optimization, vanilla calls the changed listener twice,
         // once on setText and once on setCursorToEnd
-        this.levelNameField.setChangedListener(string -> {
+        this.textFieldLevelName.setChangedListener(string -> {
         });
-        this.levelNameField.setText(
+        this.textFieldLevelName.setText(
                 Atum.config.attemptTracker.incrementAndGetWorldName(seed.isEmpty() ? AttemptTracker.Type.RSG : AttemptTracker.Type.SSG)
         );
         this.method_2727();
 
         if (!seed.isEmpty() && Atum.getSeedProvider().shouldShowSeed()) {
-            Atum.LOGGER.info("Creating \"{}\" with seed \"{}\"...", this.levelNameField.getText(), seed);
+            Atum.LOGGER.info("Creating \"{}\" with seed \"{}\"...", this.textFieldLevelName.getText(), seed);
         } else {
-            Atum.LOGGER.info("Creating \"{}\"...", this.levelNameField.getText());
+            Atum.LOGGER.info("Creating \"{}\"...", this.textFieldLevelName.getText());
         }
         this.createLevel();
     }
 
     @Unique
     private void initConfigScreen() {
-        this.levelNameField.setText(Atum.config.attemptTracker.getWorldName(
+        this.textFieldLevelName.setText(Atum.config.attemptTracker.getWorldName(
                 !this.seed.isEmpty() ? AttemptTracker.Type.SSG : AttemptTracker.Type.RSG
         ));
-        this.levelNameField.method_1876(false);
-        this.levelNameField.setEditable(false);
-        this.levelNameField.method_1856(false);
-        this.levelNameField.active = false;
+        this.textFieldLevelName.method_1876(false);
+        this.textFieldLevelName.setIsEditable(false);
+        this.textFieldLevelName.method_1856(false);
+        this.textFieldLevelName.active = false;
 
-        this.createLevelButton.setMessage(I18n.translate("gui.done"));
-        this.gameModeSwitchButton.y -= 15;
+        this.buttonCreateLevel.setMessage(I18n.translate("gui.done"));
+        this.buttonGameModeSwitch.y -= 15;
         this.demoModeButton = this.addButton(new ButtonWidget(
                 this.width / 2 - 75, 151, 150, 20,
                 I18n.translate("atum.config.demoMode", I18n.translate(Atum.config.demoMode ? "options.on" : "options.off")),
@@ -404,8 +404,8 @@ public abstract class CreateWorldScreenMixin extends Screen {
         Atum.config.gameMode = this.gameMode;
         Atum.config.structures = this.structures;
         Atum.config.seed = this.seed;
-        Atum.config.cheatsEnabled = this.cheatsEnabled;
-        Atum.config.bonusChest = this.bonusChest;
+        Atum.config.cheatsEnabled = this.commandsAllowed;
+        Atum.config.bonusChest = this.enableBonusItems;
 
         Atum.config.generatorType = AtumConfig.AtumGeneratorType.from(LevelGeneratorType.TYPES[this.generatorType]);
         Atum.config.generatorDetails = this.generatorOptionsTag != null && !this.generatorOptionsTag.isEmpty() ? this.generatorOptionsTag.toString() : "";
@@ -418,7 +418,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
             MinecraftClient.getInstance().openScreen(this.parent);
             return;
         }
-        MinecraftClient.getInstance().openScreen(new ConfirmScreen(confirm -> {
+        MinecraftClient.getInstance().openScreen(new YesNoScreen(confirm -> {
             if (!confirm) {
                 Atum.config.resetToLegalSettings();
             }
