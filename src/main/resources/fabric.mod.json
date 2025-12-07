@@ -40,7 +40,7 @@
   "accessWidener": "atum.accesswidener",
   "depends": {
     "fabricloader": ">=0.15.0",
-    "minecraft": "1.15.2",
+    "minecraft": "1.15.x",
     "speedrunapi": ">=2.1"
   },
   "breaks": {
