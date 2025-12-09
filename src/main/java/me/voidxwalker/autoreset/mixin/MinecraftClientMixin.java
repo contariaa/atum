@@ -51,7 +51,7 @@ public abstract class MinecraftClientMixin {
             if (Atum.isInWorld()) {
                 Screen gameMenuScreen = new GameMenuScreen();
                 gameMenuScreen.init(MinecraftClient.getInstance(), 0, 0);
-                if (!this.clickButton(gameMenuScreen, "fast_reset.menu.quitWorld", "menu.quitWorld", "menu.returnToMenu", "menu.disconnect", "Quit World") || Atum.isInWorld()) {
+                if (!this.clickButton(gameMenuScreen, "fast_reset.menu.quitWorld", "menu.quitWorld", "menu.returnToMenu", "menu.disconnect", "Quit to Title") || Atum.isInWorld()) {
                     if (this.world != null) {
                         this.world.disconnect();
                         this.connect(null);
