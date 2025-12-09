@@ -51,7 +51,7 @@ public abstract class MinecraftClientMixin {
             if (Atum.isInWorld()) {
                 Screen gameMenuScreen = new GameMenuScreen();
                 gameMenuScreen.init(MinecraftClient.getInstance(), 0, 0);
-                if (!this.clickButton(gameMenuScreen, "fast_reset.menu.quitWorld", "menu.quitWorld", "menu.returnToMenu", "menu.disconnect", "Quit to Title") || Atum.isInWorld()) {
+                if (!this.clickButton(gameMenuScreen, "fast_reset.menu.quitWorld", "menu.quitWorld", "Quit to Title", "menu.returnToMenu", "menu.disconnect") || Atum.isInWorld()) {
                     if (this.world != null) {
                         this.world.disconnect();
                         this.connect(null);
@@ -135,7 +135,7 @@ public abstract class MinecraftClientMixin {
         for (String translationKey : translationKeys) {
             String translation = I18n.translate(translationKey);
             for (ButtonWidget button : ((ScreenAccessor) screen).atum$getButtons()) {
-                if (translation.equals(button.message)) {
+                if (translationKey.equals(button.message) || translation.equals(button.message)) {
                     ((ScreenAccessor) screen).atum$buttonClicked(button);
                     return true;
                 }
