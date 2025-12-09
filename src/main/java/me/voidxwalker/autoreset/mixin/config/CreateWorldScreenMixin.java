@@ -398,6 +398,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
         this.levelNameField.setText(Atum.config.attemptTracker.getWorldName(
                 ((IMoreOptionsDialog) this.moreOptionsDialog).atum$isSetSeed() ? AttemptTracker.Type.SSG : AttemptTracker.Type.RSG
         ));
+        this.levelNameField.setTextFieldFocused(false);
         this.levelNameField.setEditable(false);
         this.levelNameField.setFocusUnlocked(false);
         this.levelNameField.active = false;
