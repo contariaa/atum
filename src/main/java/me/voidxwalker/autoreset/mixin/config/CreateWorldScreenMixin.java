@@ -2,6 +2,9 @@ package me.voidxwalker.autoreset.mixin.config;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
+import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import me.contaria.speedrunapi.util.TextUtil;
 import me.voidxwalker.autoreset.AttemptTracker;
 import me.voidxwalker.autoreset.Atum;
@@ -252,6 +255,31 @@ public abstract class CreateWorldScreenMixin extends Screen {
             Atum.LOGGER.warn("Data pack mismatch, some of the configured files are missing!");
         }
         return dataPacks;
+    }
+
+    @WrapMethod(
+            method = "clearDataPackTempDir"
+    )
+    private void doNotClearAtumDataPackDir(Operation<Void> original) {
+        if (!this.isAtumConfig()) {
+            original.call();
+        }
+    }
+
+    @WrapOperation(
+            method = "onClose",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/client/MinecraftClient;openScreen(Lnet/minecraft/client/gui/screen/Screen;)V"
+            )
+    )
+    private void saveOnClose(MinecraftClient client, Screen screen, Operation<Void> original) {
+        if (this.isAtumConfig()) {
+            this.save();
+            this.closeConfigScreen();
+        } else {
+            original.call(client, screen);
+        }
     }
 
     @Unique
