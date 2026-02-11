@@ -60,7 +60,9 @@ public class Atum implements ClientModInitializer {
     public static void stopRunning() {
         shouldReset = false;
         running = false;
-        config.dataPackMismatch = false;
+        if (config != null) {
+            config.dataPackMismatch = false;
+        }
         cancelAllSeeds();
     }
 

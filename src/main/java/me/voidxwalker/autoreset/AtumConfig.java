@@ -40,6 +40,7 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Config(init = Config.InitPoint.POSTLAUNCH)
 public class AtumConfig implements SpeedrunConfig {
     @Config.Ignored
     private SpeedrunConfigContainer<?> container;
