@@ -56,4 +56,9 @@ public abstract class LoadingScreenRendererMixin implements ISeedStringHolder {
     public String atum$getSeedString() {
         return this.seedString;
     }
+
+    @Override
+    public void atum$clearSeedString() {
+        this.seedString = null;
+    }
 }

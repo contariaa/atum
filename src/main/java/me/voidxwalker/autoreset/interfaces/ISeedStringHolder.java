@@ -4,4 +4,6 @@ public interface ISeedStringHolder {
     void atum$setSeedString(String seedString);
 
     String atum$getSeedString();
+
+    void atum$clearSeedString();
 }

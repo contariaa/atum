@@ -23,4 +23,9 @@ public abstract class LevelInfoMixin implements ISeedStringHolder {
     public String atum$getSeedString() {
         return this.seedString;
     }
+
+    @Override
+    public void atum$clearSeedString() {
+        throw new UnsupportedOperationException();
+    }
 }

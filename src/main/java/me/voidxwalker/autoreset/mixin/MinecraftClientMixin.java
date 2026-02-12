@@ -1,7 +1,5 @@
 package me.voidxwalker.autoreset.mixin;
 
-import com.llamalad7.mixinextras.injector.ModifyReceiver;
-import com.llamalad7.mixinextras.sugar.Local;
 import me.voidxwalker.autoreset.Atum;
 import me.voidxwalker.autoreset.interfaces.ISeedStringHolder;
 import me.voidxwalker.autoreset.mixin.access.ScreenAccessor;
@@ -32,6 +30,8 @@ public abstract class MinecraftClientMixin {
     @Shadow
     @Nullable
     public ClientWorld world;
+    @Shadow
+    public LoadingScreenRenderer loadingScreenRenderer;
 
     @Shadow
     public abstract void setScreen(Screen screen);
@@ -77,19 +77,26 @@ public abstract class MinecraftClientMixin {
         }
     }
 
-    @ModifyReceiver(
+    @Inject(
             method = "startIntegratedServer",
             at = @At(
                     value = "INVOKE",
                     target = "Lnet/minecraft/client/render/LoadingScreenRenderer;setTitle(Ljava/lang/String;)V"
             )
     )
-    private LoadingScreenRenderer addSeedToLSR(LoadingScreenRenderer renderer, String title, @Local(argsOnly = true) LevelInfo levelInfo) {
+    private void addSeedToLSR(String worldName, String levelName, LevelInfo levelInfo, CallbackInfo ci) {
         String seed = ((ISeedStringHolder) (Object) levelInfo).atum$getSeedString();
         if (seed != null) {
-            ((ISeedStringHolder) renderer).atum$setSeedString(seed);
+            ((ISeedStringHolder) this.loadingScreenRenderer).atum$setSeedString(seed);
         }
-        return renderer;
+    }
+
+    @Inject(
+            method = "startIntegratedServer",
+            at = @At("TAIL")
+    )
+    private void clearSeedFromLSR(CallbackInfo ci) {
+        ((ISeedStringHolder) this.loadingScreenRenderer).atum$clearSeedString();
     }
 
     @ModifyArg(
