@@ -13,7 +13,7 @@
     "access.ScreenAccessor",
     "config.CreateWorldScreenMixin",
     "gui.DeathScreenMixin",
-    "gui.DebugHudMixin",
+    "gui.InGameHudMixin",
     "gui.LoadingScreenRendererMixin",
     "gui.SettingsScreenMixin",
     "gui.TitleScreenMixin",

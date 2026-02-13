@@ -10,8 +10,6 @@ import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
-import java.util.Objects;
-
 @Mixin(GameOptions.class)
 public abstract class GameOptionsMixin {
 
@@ -24,6 +22,10 @@ public abstract class GameOptionsMixin {
             )
     )
     private void addResetKey(GameOptions options, KeyBinding[] allKeys, Operation<Void> original) {
-        original.call(options, ArrayUtils.add(allKeys, Objects.requireNonNull(Atum.resetKey)));
+        original.call(options, ArrayUtils.add(allKeys, Atum.resetKey = new KeyBinding(
+                "Create New World",
+                64,
+                "key.categories.atum"
+        )));
     }
 }

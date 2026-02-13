@@ -15,7 +15,6 @@ import net.minecraft.client.gui.screen.ConfirmScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.world.CreateWorldScreen;
 import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.gui.widget.PagedEntryListWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.world.level.LevelGeneratorType;
@@ -65,9 +64,11 @@ public abstract class CreateWorldScreenMixin extends Screen {
     @Shadow
     public String generatorOptions;
 
-    @Shadow protected abstract void updateSaveFolderName();
+    @Shadow
+    protected abstract void updateSaveFolderName();
 
-    @Shadow protected abstract void buttonClicked(ButtonWidget button);
+    @Shadow
+    protected abstract void buttonClicked(ButtonWidget button);
 
     @Unique
     private CompletableFuture<String> seedFuture;
@@ -253,7 +254,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
                 return this.seedFuture.join();
             }
             AtumWaitingScreen waitingScreen;
-            if (MinecraftClient.getInstance().isOnThread() && (waitingScreen = Atum.getSeedProvider().getWaitingScreen().orElse(null)) != null) {
+            if (MinecraftClient.getInstance().method_6640() && (waitingScreen = Atum.getSeedProvider().getWaitingScreen().orElse(null)) != null) {
                 // When the waiting screen wants to cancel the seed, cancel the seed future, and then let the tick
                 // activity move us back to this screen. Technically this can be a race condition where the seed future
                 // completes as the waiting screen wants to cancel it. But this isn't really an issue, as futures are
@@ -296,7 +297,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
     private void onSeedFutureFail(Throwable ex) {
         Atum.cancelAllSeeds();
         Atum.SEED_FAILURES.add(ex);
-        if (MinecraftClient.getInstance().isOnThread()) {
+        if (MinecraftClient.getInstance().method_6640()) {
             Atum.checkSeedFailures();
         }
     }
@@ -306,21 +307,6 @@ public abstract class CreateWorldScreenMixin extends Screen {
         this.seedField.setText(seed);
         this.seed = seed;
 
-        // micro optimization, vanilla calls the changed listener twice,
-        // once on setText and once on setCursorToEnd
-        this.levelNameField.setListener(new PagedEntryListWidget.Listener() {
-            @Override
-            public void setBooleanValue(int id, boolean value) {
-            }
-
-            @Override
-            public void setFloatValue(int id, float value) {
-            }
-
-            @Override
-            public void setStringValue(int id, String text) {
-            }
-        });
         this.levelNameField.setText(
                 Atum.config.attemptTracker.incrementAndGetWorldName(seed.isEmpty() ? AttemptTracker.Type.RSG : AttemptTracker.Type.SSG)
         );
@@ -331,7 +317,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
         } else {
             Atum.LOGGER.info("Creating \"{}\"...", this.levelNameField.getText());
         }
-        this.buttonClicked(this.buttons.get(0));
+        this.buttonClicked((ButtonWidget) this.buttons.get(0));
     }
 
     @Unique
@@ -343,7 +329,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
         this.levelNameField.setEditable(false);
         this.levelNameField.setFocusUnlocked(false);
 
-        this.buttons.get(0).message = I18n.translate("gui.done");
+        ((ButtonWidget) this.buttons.get(0)).message = I18n.translate("gui.done");
     }
 
     @Unique

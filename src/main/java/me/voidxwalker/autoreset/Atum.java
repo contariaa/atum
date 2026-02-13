@@ -134,10 +134,6 @@ public class Atum implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
-        resetKey = new KeyBinding(
-                "Create New World",
-                64,
-                "key.categories.atum"
-        );
+        // hotkey can't be initialized here because GameOptions is initialized before this entrypoint
     }
 }

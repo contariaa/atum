@@ -205,9 +205,7 @@ public class AtumConfig implements SpeedrunConfig {
         DEFAULT(LevelGeneratorType.DEFAULT, "Default"),
         FLAT(LevelGeneratorType.FLAT, "Superflat"),
         LARGE_BIOMES(LevelGeneratorType.LARGE_BIOMES, "Large Biomes"),
-        AMPLIFIED(LevelGeneratorType.AMPLIFIED, "AMPLIFIED"),
-        CUSTOMIZED(LevelGeneratorType.CUSTOMIZED, "Customized"),
-        DEBUG(LevelGeneratorType.DEBUG, "Debug Mode");
+        AMPLIFIED(LevelGeneratorType.AMPLIFIED, "AMPLIFIED");
 
         private final LevelGeneratorType generatorType;
         private final String name;

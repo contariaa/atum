@@ -28,7 +28,7 @@ public abstract class LoadingScreenRendererMixin implements ISeedStringHolder {
             method = "setProgressPercentage",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/client/font/TextRenderer;drawWithShadow(Ljava/lang/String;FFI)I",
+                    target = "Lnet/minecraft/client/font/TextRenderer;method_956(Ljava/lang/String;III)I",
                     ordinal = 1,
                     shift = At.Shift.AFTER
             )
@@ -38,10 +38,10 @@ public abstract class LoadingScreenRendererMixin implements ISeedStringHolder {
             return;
         }
         if (this.seedString != null && !this.seedString.isEmpty()) {
-            this.client.textRenderer.drawWithShadow(
+            this.client.textRenderer.method_956(
                     this.seedString,
-                    (this.window.getWidth() - this.client.textRenderer.getStringWidth(this.seedString)) / 2.0f,
-                    this.window.getHeight() / 2.0f - 4 - 40,
+                    (this.window.getWidth() - this.client.textRenderer.getStringWidth(this.seedString)) / 2,
+                    this.window.getHeight() / 2 - 4 - 40,
                     0xFFFFFF
             );
         }
