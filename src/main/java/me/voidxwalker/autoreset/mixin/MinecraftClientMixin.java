@@ -113,6 +113,11 @@ public abstract class MinecraftClientMixin {
                 public void render(int mouseX, int mouseY, float tickDelta) {
                     this.renderBackground();
                 }
+
+                @Override
+                protected void keyPressed(char id, int code) {
+                    // do not close on esc
+                }
             };
         }
         return screen;
