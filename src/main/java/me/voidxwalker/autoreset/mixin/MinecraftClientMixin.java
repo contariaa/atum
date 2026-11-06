@@ -1,5 +1,6 @@
 package me.voidxwalker.autoreset.mixin;
 
+import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import me.voidxwalker.autoreset.Atum;
 import me.voidxwalker.autoreset.interfaces.ISeedStringHolder;
 import me.voidxwalker.autoreset.mixin.access.ScreenAccessor;
@@ -89,6 +90,14 @@ public abstract class MinecraftClientMixin {
         if (seed != null) {
             ((ISeedStringHolder) this.loadingScreenRenderer).atum$setSeedString(seed);
         }
+    }
+
+    @ModifyReturnValue(
+            method = "isDemo",
+            at = @At("RETURN")
+    )
+    private boolean demoMode(boolean isDemo) {
+        return isDemo || Atum.inDemoMode();
     }
 
     @Inject(

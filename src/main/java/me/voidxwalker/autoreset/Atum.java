@@ -12,6 +12,7 @@ import net.minecraft.client.option.KeyBinding;
 import net.minecraft.server.MinecraftServer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.lwjgl.input.Keyboard;
 
 import java.util.ArrayList;
 import java.util.Objects;
@@ -81,6 +82,10 @@ public class Atum implements ClientModInitializer {
         return server != null && server.getLevelName() != null && MinecraftClient.getInstance().world == null;
     }
 
+    public static boolean inDemoMode() {
+        return isRunning() && config.demoMode;
+    }
+
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public static boolean canReset() {
         Screen screen = MinecraftClient.getInstance().currentScreen;
@@ -136,7 +141,7 @@ public class Atum implements ClientModInitializer {
     public void onInitializeClient() {
         resetKey = new KeyBinding(
                 "Create New World",
-                64,
+                Keyboard.KEY_F6,
                 "key.categories.atum"
         );
     }

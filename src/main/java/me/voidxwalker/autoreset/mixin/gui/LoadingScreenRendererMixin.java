@@ -37,7 +37,19 @@ public abstract class LoadingScreenRendererMixin implements ISeedStringHolder {
         if (!Atum.isRunning()) {
             return;
         }
-        if (this.seedString != null && !this.seedString.isEmpty()) {
+
+        String seed = "";
+        if (Atum.inDemoMode()) {
+            seed = "North Carolina";
+        } else if (!this.seedString.isEmpty()) {
+            if (Atum.getSeedProvider().shouldShowSeed()) {
+                seed = this.seedString;
+            } else {
+                seed = "Set Seed";
+            }
+        }
+
+        if (seed != null && !seed.isEmpty()) {
             this.client.textRenderer.drawWithShadow(
                     this.seedString,
                     (this.window.getWidth() - this.client.textRenderer.getStringWidth(this.seedString)) / 2.0f,

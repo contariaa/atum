@@ -12,12 +12,14 @@ import me.voidxwalker.autoreset.interfaces.ISeedStringHolder;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.screen.ConfirmScreen;
+import net.minecraft.client.gui.screen.ProgressScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.world.CreateWorldScreen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.PagedEntryListWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.resource.language.I18n;
+import net.minecraft.world.DemoServerWorld;
 import net.minecraft.world.level.LevelGeneratorType;
 import net.minecraft.world.level.LevelInfo;
 import org.jetbrains.annotations.Nullable;
@@ -303,6 +305,16 @@ public abstract class CreateWorldScreenMixin extends Screen {
 
     @Unique
     private void createWorld(String seed) {
+        if (Atum.inDemoMode()) {
+            String demoWorldName = Atum.config.attemptTracker.incrementAndGetWorldName(AttemptTracker.Type.DEMO);
+            Atum.LOGGER.info("Creating \"{}\" with demo seed...", demoWorldName);
+            if (MinecraftClient.getInstance().isOnThread()) {
+                MinecraftClient.getInstance().setScreen(new ProgressScreen());
+            }
+            MinecraftClient.getInstance().startIntegratedServer(demoWorldName, demoWorldName, DemoServerWorld.INFO);
+            return;
+        }
+
         this.seedField.setText(seed);
         this.seed = seed;
 
@@ -361,7 +373,7 @@ public abstract class CreateWorldScreenMixin extends Screen {
 
     @Unique
     private void closeConfigScreen() {
-        if (Atum.config.updateHasLegalSettings()) {
+        if (Atum.config.updateHasLegalSettings() || !this.shouldShowLegalWarning()) {
             Atum.config.save();
             MinecraftClient.getInstance().setScreen(this.parent);
             return;
@@ -384,6 +396,12 @@ public abstract class CreateWorldScreenMixin extends Screen {
     @Unique
     private Job getJob() {
         return ((AtumCreateWorldScreen) (Object) this).getJob();
+    }
+
+    @SuppressWarnings("DataFlowIssue")
+    @Unique
+    private boolean shouldShowLegalWarning() {
+        return ((AtumCreateWorldScreen) (Object) this).shouldShowLegalWarning();
     }
 
     @Unique
